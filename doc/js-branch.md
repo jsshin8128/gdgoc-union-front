@@ -30,7 +30,8 @@
 
 #### 공통 라이브러리
 - **`src/lib/api.ts`** - Axios HTTP 클라이언트
-  - 요청 인터셉터: JWT 토큰 자동 추가
+  - 요청 인터셉터: JWT 토큰 자동 추가 (인증 필요 엔드포인트만)
+    - 인증 불필요 엔드포인트 예외 처리: `/api/members/login`, `/api/members/signup`, `/api/members/token/refresh`
   - 응답 인터셉터: 401 에러 시 자동 토큰 갱신
 - **`src/lib/api/auth.ts`** - 인증 API 함수
   - `login()`, `signup()`, `logout()`, `deleteAccount()`
