@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import apiClient from "@/lib/api";
 import { Artist } from "@/types/artist";
+import { Album } from "@/types/album";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const ArtistDetail = () => {
@@ -16,6 +17,10 @@ const ArtistDetail = () => {
   const [artist, setArtist] = useState<Artist | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [albums, setAlbums] = useState<Album[]>([]);
+  const [albumsLoading, setAlbumsLoading] = useState(true);
+  const [albumsError, setAlbumsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!artistId) return;
@@ -40,7 +45,28 @@ const ArtistDetail = () => {
       }
     };
 
+    const fetchAlbums = async () => {
+      setAlbumsLoading(true);
+      setAlbumsError(null);
+      try {
+        const response = await apiClient.get<{ success: boolean; data: { albums: Album[] }; message: string }>(
+          `/api/albums?artistId=${artistId}`
+        );
+        if (response.data.success) {
+          setAlbums(response.data.data.albums);
+        } else {
+          throw new Error(response.data.message || 'Failed to fetch albums');
+        }
+      } catch (err) {
+        setAlbumsError("앨범 정보를 불러오는 데 실패했습니다.");
+        console.error(err);
+      } finally {
+        setAlbumsLoading(false);
+      }
+    };
+
     fetchArtist();
+    fetchAlbums();
   }, [artistId]);
 
   // Mock data for concerts (can be replaced with API data later)
@@ -151,11 +177,41 @@ const ArtistDetail = () => {
         </TabsContent>
 
         <TabsContent value="albums" className="space-y-4">
-          {/* Album content can be fetched and displayed here */}
-           <div className="text-center py-12 text-muted-foreground">
-            앨범 정보가 없습니다
-          </div>
+          {albumsLoading ? (
+            <div className="grid grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="aspect-square rounded-lg" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              ))}
+            </div>
+          ) : albumsError ? (
+            <div className="text-center py-12 text-destructive">{albumsError}</div>
+          ) : albums.length > 0 ? (
+            <div className="grid grid-cols-3 gap-4">
+              {albums.map((album) => (
+                <div key={album.albumId} className="space-y-2">
+                  <div className="aspect-square rounded-lg bg-muted overflow-hidden">
+                    {album.coverImageUrl ? (
+                      <img src={album.coverImageUrl} alt={album.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-secondary" />
+                    )}
+                  </div>
+                  <p className="text-sm font-semibold text-foreground truncate">{album.name}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(album.releaseDate).toLocaleDateString()}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              앨범 정보가 없습니다
+            </div>
+          )}
         </TabsContent>
+        
         <TabsContent value="posts" className="space-y-4">
           {/* Posts content can be fetched and displayed here */}
            <div className="text-center py-12 text-muted-foreground">
