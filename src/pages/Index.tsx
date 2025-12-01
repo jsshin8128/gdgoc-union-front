@@ -36,36 +36,62 @@ const Index = () => {
   const allCalendarEvents = useMemo((): CalendarEvent[] => {
     return artists.flatMap(artist =>
       artist.concerts.flatMap(concert => {
-        const performanceEvents: CalendarEvent[] = concert.performingSchedule.map(schedule => ({
-          artistId: artist.artistId,
-          artistName: artist.name,
-          artistProfileImageUrl: artist.profileImageUrl,
-          concertId: concert.concertId,
-          scheduleId: schedule.id,
-          date: format(new Date(schedule.date), 'yyyy-MM-dd'),
-          dateTime: schedule.date,
-          title: concert.title,
-          place: concert.place,
-          type: 'performance',
-          bookingUrl: concert.bookingUrl,
-          imageUrl: concert.imageUrl,
-        }));
+        const events: CalendarEvent[] = [];
 
-        const bookingEvent: CalendarEvent = {
-          artistId: artist.artistId,
-          artistName: artist.name,
-          artistProfileImageUrl: artist.profileImageUrl,
-          concertId: concert.concertId,
-          date: format(new Date(concert.bookingSchedule), 'yyyy-MM-dd'),
-          dateTime: concert.bookingSchedule,
-          title: concert.title,
-          place: '예매 일정',
-          type: 'booking',
-          bookingUrl: concert.bookingUrl,
-          imageUrl: concert.imageUrl,
-        };
+        if (concert.performingSchedule) {
+          concert.performingSchedule.forEach(schedule => {
+            if (schedule && schedule.date) {
+              try {
+                const d = new Date(schedule.date);
+                if (isNaN(d.getTime())) {
+                  throw new Error(`Invalid date value: ${schedule.date}`);
+                }
+                events.push({
+                  artistId: artist.artistId,
+                  artistName: artist.name,
+                  artistProfileImageUrl: artist.profileImageUrl,
+                  concertId: concert.concertId,
+                  scheduleId: schedule.id,
+                  date: format(d, 'yyyy-MM-dd'),
+                  dateTime: schedule.date,
+                  title: concert.title,
+                  place: concert.place,
+                  type: 'performance',
+                  bookingUrl: concert.bookingUrl,
+                  imageUrl: concert.imageUrl,
+                });
+              } catch (e) {
+                console.warn(`Skipping invalid performance date: "${schedule.date}" for artist ${artist.name}`);
+              }
+            }
+          });
+        }
 
-        return [...performanceEvents, bookingEvent];
+        if (concert.bookingSchedule) {
+          try {
+            const d = new Date(concert.bookingSchedule);
+            if (isNaN(d.getTime())) {
+              throw new Error(`Invalid date value: ${concert.bookingSchedule}`);
+            }
+            events.push({
+              artistId: artist.artistId,
+              artistName: artist.name,
+              artistProfileImageUrl: artist.profileImageUrl,
+              concertId: concert.concertId,
+              date: format(d, 'yyyy-MM-dd'),
+              dateTime: concert.bookingSchedule,
+              title: concert.title,
+              place: '예매 일정',
+              type: 'booking',
+              bookingUrl: concert.bookingUrl,
+              imageUrl: concert.imageUrl,
+            });
+          } catch (e) {
+            console.warn(`Skipping invalid booking date: "${concert.bookingSchedule}" for artist ${artist.name}`);
+          }
+        }
+        
+        return events;
       })
     );
   }, [artists]);
