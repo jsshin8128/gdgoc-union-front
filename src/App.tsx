@@ -21,6 +21,7 @@ import SignupForm from "./pages/SignupForm";
 import ProfileSetup from "./pages/ProfileSetup";
 import EmailVerification from "./pages/EmailVerification";
 import NotFound from "./pages/NotFound";
+import SubscribedArtistList from "./pages/SubscribedArtistList";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/home" element={<Index />} />
           <Route path="/artist/:artistId" element={<ArtistDetail />} />
           <Route path="/artists" element={<ArtistList />} />
+          <Route path="/subscriptions" element={<SubscribedArtistList />} />
           <Route path="/search" element={<Search />} />
           <Route path="/community" element={<Community />} />
           <Route path="/board/:boardId" element={<BoardList />} />
