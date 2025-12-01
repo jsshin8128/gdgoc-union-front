@@ -26,6 +26,7 @@
   - 개발 서버 포트: 8000
 - **`src/index.css`** - 전역 스타일
   - Sonner 토스트 폰트 (Pretendard) 적용
+  - Stereofidelic 폰트 정의 (`@font-face`)
   - Tailwind CSS 기본 스타일
 
 #### 공통 라이브러리
@@ -54,7 +55,12 @@
 ### 페이지 파일
 
 #### 인증 관련
-- **`src/pages/Auth.tsx`** - 로그인/회원가입 선택
+- **`src/pages/Auth.tsx`** - 로그인/회원가입 선택 (온보딩 페이지)
+  - 토스 UI 스타일 디자인 적용
+  - BANDCHU 로고에 Stereofidelic 폰트 적용
+  - 슬로건: "인디 아티스트와 팬을 잇는 플랫폼"
+  - 서브 슬로건: "팬의 발견, 아티스트의 도약"
+  - 미니멀한 레이아웃 (아이콘 제거, 텍스트 중심)
   - 구글 로그인/회원가입 버튼 클릭 시 미구현 안내 토스트 표시
 - **`src/pages/Login.tsx`** - 로그인 (이메일 저장)
   - 구글 로그인 버튼 클릭 시 미구현 안내 토스트 표시
@@ -72,10 +78,11 @@
 ### 새로 생성된 파일
 
 - **`src/lib/api/auth.ts`** - 인증 API 함수 모듈
-- **`src/pages/Auth.tsx`** - 로그인/회원가입 선택
+- **`src/pages/Auth.tsx`** - 로그인/회원가입 선택 (온보딩 페이지)
 - **`src/pages/SignupType.tsx`** - 회원가입 유형 선택
 - **`src/pages/EmailVerification.tsx`** - 이메일 인증
 - **`src/components/GoogleIcon.tsx`** - 구글 아이콘 컴포넌트
+- **`public/fonts/Stereofidelic.otf`** - BANDCHU 로고용 커스텀 폰트
 
 ---
 
@@ -139,6 +146,7 @@
 - **UI**: Shadcn/ui, Tailwind CSS
 - **알림**: Sonner
 - **아이콘**: Lucide React
+- **폰트**: Pretendard (기본), Stereofidelic (BANDCHU 로고)
 
 ---
 
