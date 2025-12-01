@@ -48,7 +48,9 @@ const Calendar = ({ onDateSelect, events, selectedDate }: CalendarProps) => {
   };
 
   const goToToday = () => {
-    setCurrentDate(new Date());
+    const today = new Date();
+    setCurrentDate(today);
+    onDateSelect(today);
   };
 
   return (
