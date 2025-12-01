@@ -95,3 +95,17 @@ export function formatDateTime(isoString: string): string {
 
   return `${year}.${month}.${day} ${hour}:${minute}`;
 }
+
+/**
+ * 두 Date 객체가 같은 날짜인지 확인합니다. (시간 무시)
+ * @param date1 Date
+ * @param date2 Date
+ */
+export function isSameDay(date1: Date, date2: Date): boolean {
+  if (!date1 || !date2) return false;
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+}
