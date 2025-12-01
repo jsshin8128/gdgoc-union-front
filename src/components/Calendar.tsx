@@ -1,48 +1,43 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CalendarEvent } from "@/types/calendarEvent";
+import { format, isSameDay } from 'date-fns';
 
 interface CalendarProps {
-  onDateSelect?: (date: Date) => void;
-  eventDates?: number[];
+  onDateSelect: (date: Date) => void;
+  events: CalendarEvent[];
+  selectedDate: Date | undefined;
 }
 
-const Calendar = ({ onDateSelect, eventDates = [8, 10, 27, 28] }: CalendarProps) => {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 11, 1)); // December 2025
-  const [selectedDate, setSelectedDate] = useState<number | null>(null);
+const Calendar = ({ onDateSelect, events, selectedDate }: CalendarProps) => {
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const eventDates = useMemo(() => {
+    return new Set(events.map(event => format(new Date(event.date), 'yyyy-MM-dd')));
+  }, [events]);
 
   const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
   
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const prevMonthDays = new Date(year, month, 0).getDate();
+    const firstDayOfMonth = new Date(year, month, 1);
+    const lastDayOfMonth = new Date(year, month + 1, 0);
     
-    const days: (number | null)[] = [];
-    
-    // Previous month days
-    for (let i = firstDay - 1; i >= 0; i--) {
-      days.push(prevMonthDays - i);
+    const days = [];
+    let day = new Date(firstDayOfMonth);
+    day.setDate(day.getDate() - day.getDay());
+
+    for (let i = 0; i < 42; i++) {
+      days.push(new Date(day));
+      day.setDate(day.getDate() + 1);
     }
-    
-    // Current month days
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(i);
-    }
-    
-    // Next month days
-    const remainingDays = 42 - days.length;
-    for (let i = 1; i <= remainingDays; i++) {
-      days.push(i);
-    }
-    
-    return { days, firstDay, daysInMonth };
+    return { days, month };
   };
 
-  const { days, firstDay, daysInMonth } = getDaysInMonth(currentDate);
-  const today = 8; // Based on the reference image
+  const { days, month } = getDaysInMonth(currentDate);
+  const today = new Date();
 
   const goToPrevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -53,14 +48,9 @@ const Calendar = ({ onDateSelect, eventDates = [8, 10, 27, 28] }: CalendarProps)
   };
 
   const goToToday = () => {
-    setCurrentDate(new Date(2025, 11, 1));
-  };
-
-  const handleDateClick = (day: number, isCurrentMonth: boolean) => {
-    if (isCurrentMonth) {
-      setSelectedDate(day);
-      onDateSelect?.(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
-    }
+    const today = new Date();
+    setCurrentDate(today);
+    onDateSelect(today);
   };
 
   return (
@@ -87,7 +77,7 @@ const Calendar = ({ onDateSelect, eventDates = [8, 10, 27, 28] }: CalendarProps)
           <div
             key={day}
             className={`text-xs font-medium text-center py-2 ${
-              index === 0 ? "text-calendar-weekend" : index === 6 ? "text-primary" : "text-foreground"
+              index === 0 ? "text-rose-500" : index === 6 ? "text-blue-500" : "text-foreground"
             }`}
           >
             {day}
@@ -97,28 +87,32 @@ const Calendar = ({ onDateSelect, eventDates = [8, 10, 27, 28] }: CalendarProps)
 
       <div className="grid grid-cols-7 gap-2">
         {days.map((day, index) => {
-          const isCurrentMonth = 
-            (index >= firstDay && index < firstDay + daysInMonth);
-          const isToday = day === today && isCurrentMonth;
-          const hasEvent = day !== null && eventDates.includes(day) && isCurrentMonth;
-          const isWeekend = index % 7 === 0 || index % 7 === 6;
-          
+          const isCurrentMonth = day.getMonth() === month;
+          const isToday = isSameDay(day, today);
+          const dateString = format(day, 'yyyy-MM-dd');
+          const hasEvent = eventDates.has(dateString);
+          const isSelected = selectedDate ? isSameDay(day, selectedDate) : false;
+          const dayOfWeek = day.getDay();
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
           return (
             <button
               key={index}
-              onClick={() => day !== null && handleDateClick(day, isCurrentMonth)}
+              onClick={() => onDateSelect(day)}
               className={`
                 aspect-square rounded-full flex items-center justify-center text-sm font-medium
                 transition-all duration-200
                 ${!isCurrentMonth ? "text-muted-foreground/30" : ""}
-                ${isWeekend && isCurrentMonth ? "text-calendar-weekend" : "text-foreground"}
-                ${isToday ? "ring-2 ring-calendar-today" : ""}
-                ${hasEvent ? "bg-calendar-highlight text-primary-foreground" : ""}
-                ${!hasEvent && isCurrentMonth ? "hover:bg-secondary" : ""}
-                ${selectedDate === day && isCurrentMonth && !hasEvent ? "bg-secondary" : ""}
+                ${isCurrentMonth && isWeekend && dayOfWeek === 0 ? "text-rose-500" : ""}
+                ${isCurrentMonth && isWeekend && dayOfWeek === 6 ? "text-blue-500" : ""}
+                ${isCurrentMonth && !isWeekend ? "text-foreground" : ""}
+                ${isToday ? "ring-2 ring-primary" : ""}
+                ${hasEvent && isCurrentMonth ? "bg-primary/20 text-primary-foreground" : ""}
+                ${isSelected && isCurrentMonth ? "bg-primary text-primary-foreground" : ""}
+                ${!isSelected && isCurrentMonth ? "hover:bg-secondary" : ""}
               `}
             >
-              {day}
+              {day.getDate()}
             </button>
           );
         })}
