@@ -2,12 +2,14 @@ import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowLeft, Camera, User } from "lucide-react";
+import { setupProfile } from "@/lib/api/auth";
+import { toast } from "sonner";
 
 const profileSetupSchema = z.object({
   nickname: z.string().min(2, "닉네임은 최소 2자 이상이어야 합니다"),
@@ -17,15 +19,8 @@ type ProfileSetupValues = z.infer<typeof profileSetupSchema>;
 
 const ProfileSetup = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewImage, setPreviewImage] = useState<string>("");
-
-  const signupData = location.state as {
-    email?: string;
-    password?: string;
-    userType?: "FAN" | "ARTIST";
-  };
 
   const form = useForm<ProfileSetupValues>({
     resolver: zodResolver(profileSetupSchema),
@@ -47,27 +42,46 @@ const ProfileSetup = () => {
   };
 
   const onSubmit = async (data: ProfileSetupValues) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      toast.error('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      navigate('/login');
+      return;
+    }
+    
     try {
-      // 프로필 설정 API 호출
-      const profileData = {
+      const requestData: { nickname: string; profileImageUrl?: string } = {
         nickname: data.nickname,
-        profileImageUrl: previewImage || "https://via.placeholder.com/150",
       };
-      console.log("Profile setup data:", profileData);
-
-      // 회원가입 API 호출
-      const signupData_final = {
-        email: signupData.email,
-        password: signupData.password,
-        nickname: data.nickname,
-        role: signupData.userType || "FAN",
-      };
-      console.log("Final signup data:", signupData_final);
-
-      // 회원가입 완료 후 로그인 페이지로 이동
-      navigate("/login");
-    } catch (error) {
-      console.error("Profile setup error:", error);
+      
+      // 프로필 이미지가 있을 때만 추가
+      if (previewImage) {
+        requestData.profileImageUrl = previewImage;
+      }
+      
+      const profileResponse = await setupProfile(requestData);
+      // 프로필 설정 완료 후 사용자 정보 저장
+      localStorage.setItem('userNickname', profileResponse.nickname);
+      if (profileResponse.profileImageUrl) {
+        localStorage.setItem('userProfileImage', profileResponse.profileImageUrl);
+      }
+      toast.success('프로필 설정이 완료되었습니다.');
+      navigate("/home");
+    } catch (error: any) {
+      // 네트워크 에러인지 확인
+      if (!error.response && error.request) {
+        toast.error('네트워크 에러가 발생했습니다. 서버에 연결할 수 없습니다.');
+        return;
+      }
+      
+      // 서버 응답 구조에 따라 에러 메시지 추출
+      const errorMessage = 
+        error.response?.data?.message || 
+        error.response?.data?.error || 
+        error.message || 
+        '프로필 설정에 실패했습니다.';
+      
+      toast.error(errorMessage);
     }
   };
 

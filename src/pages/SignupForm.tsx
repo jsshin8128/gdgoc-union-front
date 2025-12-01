@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ArrowLeft, UserPlus } from "lucide-react";
+import { signup } from "@/lib/api/auth";
+import { toast } from "sonner";
 
 const signupFormSchema = z.object({
   email: z.string().email("올바른 이메일 형식이 아닙니다"),
@@ -29,16 +31,46 @@ const SignupForm = () => {
 
   const onSubmit = async (data: SignupFormValues) => {
     try {
-      // 프로필 설정 페이지로 이동
+      const response = await signup({
+        email: data.email,
+        password: data.password,
+        nickname: 'temp', // 프로필 설정에서 업데이트할 예정
+        role: userType,
+      });
+      
+      localStorage.setItem('accessToken', response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
+      // 회원가입 시 이메일과 role 저장
+      localStorage.setItem('userEmail', data.email);
+      localStorage.setItem('userRole', userType);
+      
       navigate("/signup/profile", { 
         state: { 
-          email: data.email, 
-          password: data.password, 
           userType 
         } 
       });
-    } catch (error) {
-      console.error("Signup form error:", error);
+    } catch (error: any) {
+      // 네트워크 에러인지 확인
+      if (!error.response && error.request) {
+        toast.error('네트워크 에러가 발생했습니다. 서버에 연결할 수 없습니다.');
+        return;
+      }
+      
+      // 409 에러 처리 (이메일/닉네임 중복 등)
+      if (error.response?.status === 409) {
+        const conflictMessage = error.response?.data?.message || '이미 사용 중인 이메일 또는 닉네임입니다.';
+        toast.error(conflictMessage);
+        return;
+      }
+      
+      // 서버 응답 구조에 따라 에러 메시지 추출
+      const errorMessage = 
+        error.response?.data?.message || 
+        error.response?.data?.error || 
+        error.message || 
+        '회원가입에 실패했습니다.';
+      
+      toast.error(errorMessage);
     }
   };
 

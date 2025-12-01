@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import GoogleIcon from "@/components/GoogleIcon";
 import { ArrowLeft, UserCircle } from "lucide-react";
+import { login, LoginRequest } from "@/lib/api/auth";
+import { toast } from "sonner";
 
 const loginSchema = z.object({
   email: z.string().email("올바른 이메일 형식이 아닙니다"),
@@ -27,12 +29,15 @@ const Login = () => {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      // TODO: API 호출
-      console.log("Login data:", data);
-      // 로그인 성공 시 홈으로 이동
+      const response = await login(data as LoginRequest);
+      localStorage.setItem('accessToken', response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
+      // 로그인 시 이메일 저장
+      localStorage.setItem('userEmail', data.email);
+      toast.success('로그인 성공');
       navigate("/home");
-    } catch (error) {
-      console.error("Login error:", error);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || '로그인에 실패했습니다.');
     }
   };
 

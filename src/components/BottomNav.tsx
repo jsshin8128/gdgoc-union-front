@@ -3,7 +3,7 @@ import { Calendar, Users, LayoutGrid, MessageCircle, User } from "lucide-react";
 
 const BottomNav = () => {
   const navItems = [
-    { to: "/", icon: Calendar, label: "Calendar" },
+    { to: "/home", icon: Calendar, label: "Calendar" },
     { to: "/community", icon: Users, label: "Community" },
     { to: "/feed", icon: LayoutGrid, label: "Feed" },
     { to: "/chatting", icon: MessageCircle, label: "Chatting" },

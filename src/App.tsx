@@ -20,9 +20,16 @@ import SignupType from "./pages/SignupType";
 import SignupForm from "./pages/SignupForm";
 import ProfileSetup from "./pages/ProfileSetup";
 import EmailVerification from "./pages/EmailVerification";
+import AccountDelete from "./pages/AccountDelete";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// 루트 경로 리다이렉트 컴포넌트
+const RootRedirect = () => {
+  const accessToken = localStorage.getItem('accessToken');
+  return <Navigate to={accessToken ? "/home" : "/auth"} replace />;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -31,7 +38,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/auth" replace />} />
+          <Route path="/" element={<RootRedirect />} />
           <Route path="/home" element={<Index />} />
           <Route path="/artist/:artistId" element={<ArtistDetail />} />
           <Route path="/artists" element={<ArtistList />} />
@@ -49,6 +56,7 @@ const App = () => (
           <Route path="/signup/form" element={<SignupForm />} />
           <Route path="/signup/profile" element={<ProfileSetup />} />
           <Route path="/signup/verify" element={<EmailVerification />} />
+          <Route path="/account/delete" element={<AccountDelete />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

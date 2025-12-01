@@ -1,0 +1,116 @@
+import apiClient from '../api';
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface SignupRequest {
+  email: string;
+  password: string;
+  nickname: string;
+  role: 'FAN' | 'ARTIST';
+}
+
+export interface SignupResponse {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface ProfileSetupRequest {
+  nickname: string;
+  profileImageUrl?: string;
+}
+
+export interface ProfileSetupResponse {
+  nickname: string;
+  profileImageUrl?: string;
+}
+
+export interface GoogleOAuthRequest {
+  code: string;
+}
+
+export interface GoogleOAuthResponse {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface RefreshTokenResponse {
+  accessToken: string;
+  refreshToken: string;
+}
+
+// 로그인
+export const login = async (data: LoginRequest): Promise<LoginResponse> => {
+  const response = await apiClient.post<{ data: LoginResponse }>('/api/members/login', data);
+  return response.data.data;
+};
+
+// 회원가입
+export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
+  const response = await apiClient.post('/api/members/signup', data);
+  
+  // API 응답 구조: { success: true, data: { accessToken, refreshToken }, message: "string" }
+  if (response.data && response.data.data) {
+    const tokenData = response.data.data;
+    if (tokenData.accessToken && tokenData.refreshToken) {
+      return tokenData;
+    }
+  }
+  
+  // 직접 토큰이 있는 경우
+  if (response.data.accessToken && response.data.refreshToken) {
+    return response.data;
+  }
+  
+  throw new Error('Invalid response structure: tokens not found');
+};
+
+// 프로필 설정
+export const setupProfile = async (data: ProfileSetupRequest): Promise<ProfileSetupResponse> => {
+  const response = await apiClient.patch('/api/members/me/profile/setup', data);
+  
+  // 응답 구조에 따라 처리 (data.data 또는 직접 data)
+  if (response.data.data) {
+    return response.data.data;
+  }
+  return response.data;
+};
+
+// 구글 OAuth 로그인
+export const googleOAuth = async (data: GoogleOAuthRequest): Promise<GoogleOAuthResponse> => {
+  const response = await apiClient.post<{ data: GoogleOAuthResponse }>('/api/members/oauth/google', data);
+  return response.data.data;
+};
+
+// 토큰 갱신
+export const refreshToken = async (data: RefreshTokenRequest): Promise<RefreshTokenResponse> => {
+  const response = await apiClient.post('/api/members/token/refresh', data);
+  
+  // 응답 구조에 따라 처리
+  if (response.data && response.data.data) {
+    return response.data.data;
+  }
+  return response.data;
+};
+
+// 로그아웃
+export const logout = async (): Promise<void> => {
+  await apiClient.post('/api/members/logout');
+};
+
+// 회원탈퇴
+export const deleteAccount = async (): Promise<void> => {
+  await apiClient.delete('/api/members/me');
+};
+

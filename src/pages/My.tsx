@@ -1,13 +1,187 @@
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { 
+  User, 
+  Settings, 
+  AlertTriangle, 
+  ChevronRight,
+  LogOut,
+  Shield,
+  HelpCircle
+} from "lucide-react";
+import { logout } from "@/lib/api/auth";
+import { toast } from "sonner";
 
 const My = () => {
+  const navigate = useNavigate();
+
+  // localStorage에서 사용자 정보 가져오기
+  const userInfo = {
+    nickname: localStorage.getItem('userNickname') || "사용자",
+    email: localStorage.getItem('userEmail') || "",
+    profileImageUrl: localStorage.getItem('userProfileImage') || "",
+    role: (localStorage.getItem('userRole') as "FAN" | "ARTIST") || "FAN"
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // 로그아웃 성공 시 localStorage 정리
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userEmail');
+      localStorage.removeItem('userNickname');
+      localStorage.removeItem('userProfileImage');
+      localStorage.removeItem('userRole');
+      toast.success('로그아웃되었습니다.');
+      navigate('/auth');
+    } catch (error: any) {
+      // API 호출 실패해도 로컬 정리 후 로그아웃 처리
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userEmail');
+      localStorage.removeItem('userNickname');
+      localStorage.removeItem('userProfileImage');
+      localStorage.removeItem('userRole');
+      
+      if (!error.response && error.request) {
+        toast.error('네트워크 에러가 발생했습니다.');
+      } else {
+        const errorMessage = 
+          error.response?.data?.message || 
+          error.response?.data?.error || 
+          '로그아웃에 실패했습니다.';
+        toast.error(errorMessage);
+      }
+      navigate('/auth');
+    }
+  };
+
+  const menuItems = [
+    {
+      icon: Settings,
+      label: "설정",
+      onClick: () => {
+        toast.info('설정 기능은 준비 중입니다.');
+      }
+    },
+    {
+      icon: Shield,
+      label: "개인정보 보호",
+      onClick: () => {
+        toast.info('개인정보 보호 기능은 준비 중입니다.');
+      }
+    },
+    {
+      icon: HelpCircle,
+      label: "고객센터",
+      onClick: () => {
+        toast.info('고객센터 기능은 준비 중입니다.');
+      }
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header />
       <main className="max-w-screen-xl mx-auto px-4 py-6">
-        <h1 className="text-2xl font-bold mb-4">My</h1>
-        <p className="text-muted-foreground">마이페이지 (준비중)</p>
+        {/* 프로필 섹션 */}
+        <div className="mb-6">
+          <Card className="border-0 shadow-sm bg-card">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <Avatar className="w-16 h-16 ring-2 ring-border">
+                  {userInfo.profileImageUrl ? (
+                    <AvatarImage src={userInfo.profileImageUrl} alt={userInfo.nickname} />
+                  ) : null}
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    <User className="w-8 h-8 text-primary" />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-xl font-semibold text-foreground mb-1 truncate">
+                    {userInfo.nickname}
+                  </h2>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {userInfo.email}
+                  </p>
+                  <div className="mt-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                      {userInfo.role === "FAN" ? "팬" : "아티스트"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 메뉴 섹션 */}
+        <div className="space-y-3 mb-6">
+          <Card className="border-0 shadow-sm bg-card">
+            <CardContent className="p-0">
+              {menuItems.map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.label}>
+                    <button
+                      onClick={item.onClick}
+                      className="w-full px-4 py-4 flex items-center gap-3 hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                        <Icon className="w-5 h-5 text-foreground" />
+                      </div>
+                      <span className="flex-1 text-left font-medium text-foreground">
+                        {item.label}
+                      </span>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    {index < menuItems.length - 1 && (
+                      <Separator className="mx-4" />
+                    )}
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 계정 관리 섹션 */}
+        <div className="space-y-3 mb-6">
+          <Card className="border-0 shadow-sm bg-card">
+            <CardContent className="p-0">
+              <button
+                onClick={handleLogout}
+                className="w-full px-4 py-4 flex items-center gap-3 hover:bg-accent/50 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                  <LogOut className="w-5 h-5 text-foreground" />
+                </div>
+                <span className="flex-1 text-left font-medium text-foreground">
+                  로그아웃
+                </span>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </button>
+              <Separator className="mx-4" />
+              <button
+                onClick={() => navigate("/account/delete")}
+                className="w-full px-4 py-4 flex items-center gap-3 hover:bg-destructive/10 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-destructive" />
+                </div>
+                <span className="flex-1 text-left font-medium text-destructive">
+                  회원탈퇴
+                </span>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </CardContent>
+          </Card>
+        </div>
       </main>
       <BottomNav />
     </div>
