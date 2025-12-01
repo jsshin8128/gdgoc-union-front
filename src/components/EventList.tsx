@@ -17,10 +17,13 @@ interface EventListProps {
   events: CalendarEvent[];
 }
 
-const EventList = ({ events }: EventListProps) => {
+const EventList = ({ events = [] }: EventListProps) => {
   const navigate = useNavigate();
 
   const groupedEvents = useMemo(() => {
+    if (!events || events.length === 0) {
+      return {};
+    }
     return events.reduce((acc, event) => {
       if (!acc[event.artistId]) {
         acc[event.artistId] = {
