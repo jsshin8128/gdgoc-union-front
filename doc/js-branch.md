@@ -45,6 +45,10 @@
   - `subscribeToArtist()` - 아티스트 구독하기 (Mock: localStorage 사용)
   - `unsubscribeFromArtist()` - 구독 취소하기 (Mock: localStorage 사용)
   - `getSubscriptions()` - 구독 목록 조회 (Mock: localStorage 사용)
+- **`src/lib/utils.ts`** - 유틸리티 함수
+  - `cn()` - 클래스명 병합 함수
+  - `formatPerformingSchedule()` - 공연 일정 포맷팅 함수
+  - `formatDateTime()` - 날짜/시간 포맷팅 함수
 
 #### 공통 컴포넌트
 - **`src/components/Header.tsx`** - 전역 헤더
@@ -104,6 +108,8 @@
   - 아티스트 클릭: 단일 클릭 시 캘린더 토글, 더블 클릭 시 상세 페이지 이동
   - 아티스트별 장르 색상 구분 표시
   - 아티스트별 간단한 설명 표시
+  - 드래그 스크롤 기능: 아티스트를 드래그하여 좌우로 스크롤 가능 (마우스 및 터치 지원)
+  - 드래그 중 클릭 이벤트 방지로 의도치 않은 동작 방지
 - **`src/components/Calendar.tsx`** - 캘린더 컴포넌트
   - 아티스트 선택 없으면 일정 표시 안 함 (안내 문구 표시)
   - 선택된 아티스트별 색상 구분 일정 표시 
@@ -140,6 +146,14 @@
   - 아티스트별로 그룹화하여 표시
   - 공연 카드 클릭 시 아티스트 상세 페이지로 이동
   - 공연 이미지 없을 시 Mic 아이콘 표시
+- **`src/types/artist.ts`** - 아티스트 관련 타입 정의
+  - `ArtistDetail`, `Artist`, `ArtistsApiResponse`, `SnsLink` 인터페이스
+- **`src/types/album.ts`** - 앨범 관련 타입 정의
+  - `Album` 인터페이스
+- **`src/types/concert.ts`** - 공연 관련 타입 정의
+  - `Concert`, `PerformingSchedule` 인터페이스
+- **`src/types/calendarEvent.ts`** - 캘린더 이벤트 관련 타입 정의
+  - `CalendarEvent` 인터페이스
 - **`public/fonts/Stereofidelic.otf`** - BANDCHU 로고용 커스텀 폰트
 
 ---

@@ -1,5 +1,5 @@
 import { Plus, Check, User, Loader2, ChevronRight, ChevronDown } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { subscribeToArtist, unsubscribeFromArtist, getSubscriptions } from "@/lib/api/subscription";
 import { toast } from "sonner";
@@ -66,6 +66,8 @@ const ArtistCarousel = ({ onArtistToggle, selectedArtistIds = [] }: ArtistCarous
   const [loadingIds, setLoadingIds] = useState<Set<number>>(new Set());
   const [artists, setArtists] = useState<Artist[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
 
   useEffect(() => {
     const loadSubscriptions = async () => {
@@ -162,7 +164,10 @@ const ArtistCarousel = ({ onArtistToggle, selectedArtistIds = [] }: ArtistCarous
         <>
           {hasSubscribedArtists ? (
             <>
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide items-end">
+            <div 
+              ref={carouselRef}
+              className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide items-end"
+            >
               <button 
                 className="flex-shrink-0 flex flex-col items-center gap-2.5"
                 onClick={() => navigate("/artists")}
@@ -181,7 +186,71 @@ const ArtistCarousel = ({ onArtistToggle, selectedArtistIds = [] }: ArtistCarous
           return (
             <button
               key={artist.id}
+              onMouseDown={(e) => {
+                if (!carouselRef.current) return;
+                
+                const startX = e.clientX;
+                const startScrollLeft = carouselRef.current.scrollLeft;
+                let hasMoved = false;
+                
+                const handleMouseMove = (moveEvent: MouseEvent) => {
+                  const deltaX = moveEvent.clientX - startX;
+                  if (Math.abs(deltaX) > 5) {
+                    hasMoved = true;
+                    isDraggingRef.current = true;
+                    if (carouselRef.current) {
+                      carouselRef.current.scrollLeft = startScrollLeft - deltaX;
+                    }
+                  }
+                };
+                
+                const handleMouseUp = () => {
+                  // 약간의 지연 후 드래그 상태 해제 (클릭 이벤트와 구분)
+                  setTimeout(() => {
+                    isDraggingRef.current = false;
+                  }, 100);
+                  document.removeEventListener('mousemove', handleMouseMove);
+                  document.removeEventListener('mouseup', handleMouseUp);
+                };
+                
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+              }}
+              onTouchStart={(e) => {
+                if (!carouselRef.current) return;
+                
+                const startX = e.touches[0].clientX;
+                const startScrollLeft = carouselRef.current.scrollLeft;
+                let hasMoved = false;
+                
+                const handleTouchMove = (moveEvent: TouchEvent) => {
+                  const deltaX = moveEvent.touches[0].clientX - startX;
+                  if (Math.abs(deltaX) > 5) {
+                    hasMoved = true;
+                    isDraggingRef.current = true;
+                    if (carouselRef.current) {
+                      carouselRef.current.scrollLeft = startScrollLeft - deltaX;
+                    }
+                  }
+                };
+                
+                const handleTouchEnd = () => {
+                  setTimeout(() => {
+                    isDraggingRef.current = false;
+                  }, 100);
+                  document.removeEventListener('touchmove', handleTouchMove);
+                  document.removeEventListener('touchend', handleTouchEnd);
+                };
+                
+                document.addEventListener('touchmove', handleTouchMove);
+                document.addEventListener('touchend', handleTouchEnd);
+              }}
               onClick={(e) => {
+                // 드래그가 아닌 경우에만 클릭 처리
+                if (isDraggingRef.current) {
+                  e.preventDefault();
+                  return;
+                }
                 e.preventDefault();
                 // Single click: 아티스트 토글 (캘린더에 일정 표시/제거)
                 if (onArtistToggle) {
@@ -194,7 +263,7 @@ const ArtistCarousel = ({ onArtistToggle, selectedArtistIds = [] }: ArtistCarous
                 // Double click: 상세 페이지 이동
                 navigate(`/artist/${artist.id}`);
               }}
-              className={`flex-shrink-0 flex flex-col items-center gap-2.5 transition-all duration-200 active:scale-[0.98] ${
+              className={`flex-shrink-0 flex flex-col items-center gap-2.5 transition-all duration-200 active:scale-[0.98] select-none cursor-grab active:cursor-grabbing ${
                 isSelected ? 'scale-105' : 'hover:scale-[1.02]'
               }`}
             >
