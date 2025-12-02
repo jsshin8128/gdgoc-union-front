@@ -3,9 +3,9 @@ export interface CalendarEvent {
   artistName: string;
   artistProfileImageUrl?: string;
   concertId: number;
-  scheduleId?: number; // For unique key generation
-  date: string; // YYYY-MM-DD format for calendar highlighting
-  dateTime: string; // Full ISO string for list display
+  scheduleId?: number;
+  date: string;
+  dateTime: string;
   title: string;
   place: string;
   type: 'performance' | 'booking';

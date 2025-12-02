@@ -45,6 +45,10 @@
   - `subscribeToArtist()` - 아티스트 구독하기 (Mock: localStorage 사용)
   - `unsubscribeFromArtist()` - 구독 취소하기 (Mock: localStorage 사용)
   - `getSubscriptions()` - 구독 목록 조회 (Mock: localStorage 사용)
+- **`src/lib/utils.ts`** - 유틸리티 함수
+  - `cn()` - 클래스명 병합 함수
+  - `formatPerformingSchedule()` - 공연 일정 포맷팅 함수
+  - `formatDateTime()` - 날짜/시간 포맷팅 함수
 
 #### 공통 컴포넌트
 - **`src/components/Header.tsx`** - 전역 헤더
@@ -105,6 +109,8 @@
   - 아티스트 클릭: 단일 클릭 시 캘린더 토글, 더블 클릭 시 상세 페이지 이동
   - 아티스트별 장르 색상 구분 표시
   - 아티스트별 간단한 설명 표시
+  - 드래그 스크롤 기능: 아티스트를 드래그하여 좌우로 스크롤 가능 (마우스 및 터치 지원)
+  - 드래그 중 클릭 이벤트 방지로 의도치 않은 동작 방지
 - **`src/components/Calendar.tsx`** - 캘린더 컴포넌트
   - 아티스트 선택 없으면 일정 표시 안 함 (안내 문구 표시)
   - 선택된 아티스트별 색상 구분 일정 표시 
@@ -141,6 +147,14 @@
   - 아티스트별로 그룹화하여 표시
   - 공연 카드 클릭 시 아티스트 상세 페이지로 이동
   - 공연 이미지 없을 시 Mic 아이콘 표시
+- **`src/types/artist.ts`** - 아티스트 관련 타입 정의
+  - `ArtistDetail`, `Artist`, `ArtistsApiResponse`, `SnsLink` 인터페이스
+- **`src/types/album.ts`** - 앨범 관련 타입 정의
+  - `Album` 인터페이스
+- **`src/types/concert.ts`** - 공연 관련 타입 정의
+  - `Concert`, `PerformingSchedule` 인터페이스
+- **`src/types/calendarEvent.ts`** - 캘린더 이벤트 관련 타입 정의
+  - `CalendarEvent` 인터페이스
 - **`public/fonts/Stereofidelic.otf`** - BANDCHU 로고용 커스텀 폰트
 
 ---
@@ -292,6 +306,112 @@
   - 현재 API 실패 시 Mock 데이터로 폴백
   - `GET /api/concerts?artistId={artistId}` - 공연 목록 조회
   - `GET /api/albums?artistId={artistId}` - 앨범 목록 조회
+
+---
+
+## 머지 충돌 해결 (main 브랜치 병합)
+
+**작업일**: 2025-12-02  
+**머지 커밋**: `b54e546` - merge: js 브랜치를 main에 병합 (충돌 해결)
+
+### 충돌 발생 원인
+
+`js` 브랜치와 `main` 브랜치가 분기된 후 동일한 파일들이 양쪽에서 독립적으로 수정되어 충돌이 발생했습니다.
+
+### 충돌 해결 전략
+
+코드베이스 분석 결과, `js` 브랜치의 변경사항이 실제 사용 중인 코드와 더 일치하므로 `js` 브랜치 버전을 기준으로 통합했습니다.
+
+### 해결된 충돌 파일
+
+#### 1. 타입 파일들 (`src/types/*.ts`)
+
+**충돌 타입**: `add/add` (양쪽 브랜치에서 동일 파일 생성)
+
+- **`src/types/artist.ts`**
+  - `main`: `Artist` 인터페이스에서 `artistId: number` 사용
+  - `js`: `Artist` 인터페이스에서 `id: number` 사용
+  - **해결**: `js` 버전 선택 (실제 코드에서 `artist.id` 사용 중)
+  - `ArtistDetail` 인터페이스의 optional 필드 유지 (`profileImageUrl?`, `description?`, `genre?`)
+
+- **`src/types/album.ts`**
+  - 양쪽 버전 내용 동일
+  - **해결**: `js` 버전 선택 (빈 줄 제거)
+
+- **`src/types/concert.ts`**
+  - 양쪽 버전 내용 동일
+  - **해결**: `js` 버전 선택 (빈 줄 제거)
+
+- **`src/types/calendarEvent.ts`**
+  - `main`: 주석 포함 (`// For unique key generation`, `// YYYY-MM-DD format for calendar highlighting`)
+  - `js`: 주석 없음
+  - **해결**: `js` 버전 선택 (주석 제거, 코드만 유지)
+
+#### 2. 유틸리티 함수 (`src/lib/utils.ts`)
+
+**충돌 타입**: `content` (양쪽에서 동일 함수 수정)
+
+- **`main` 브랜치**: 복잡한 KST 포맷팅 로직 (약 110줄)
+  - `formatScheduleDateTime()`: KST 기준 날짜 포맷팅
+  - `formatPerformingSchedule()`: 연속 날짜 범위 처리, KST 기준
+  - `formatDateTime()`: KST 기준 ISO 문자열 포맷팅
+  - `isSameDay()`: 날짜 비교 함수
+
+- **`js` 브랜치**: 간단한 `date-fns` 기반 포맷팅 (약 26줄)
+  - `formatPerformingSchedule()`: `date-fns`의 `format()` 사용
+  - `formatDateTime()`: `date-fns`의 `format()` 사용
+
+- **해결**: `js` 버전 선택
+  - 실제 사용 중인 코드와 일치 (`ArtistDetail.tsx`에서 사용)
+  - 더 간단하고 유지보수하기 쉬움
+  - `date-fns` 라이브러리 활용으로 일관성 유지
+
+#### 3. 라우팅 설정 (`src/App.tsx`)
+
+**충돌 타입**: `content` (양쪽에서 수정)
+
+- **`main` 브랜치**: `SubscribedArtistList` import 및 라우트 포함
+  ```tsx
+  import SubscribedArtistList from "./pages/SubscribedArtistList";
+  <Route path="/subscriptions" element={<SubscribedArtistList />} />
+  ```
+
+- **`js` 브랜치**: `SubscribedArtistList` 제거됨
+
+- **해결**: `js` 버전 선택
+  - `js` 브랜치에서 의도적으로 제거한 것으로 판단
+  - 구독 기능은 `ArtistList` 페이지에서 통합 관리
+
+#### 4. 컴포넌트 (`src/components/ArtistCarousel.tsx`)
+
+**충돌 타입**: `content` (양쪽에서 수정)
+
+- **해결**: `js` 버전 선택 (`--ours` 전략)
+  - `js` 브랜치의 최신 기능 포함 (드래그 스크롤 등)
+  - `main` 브랜치의 변경사항은 이미 `js`에 반영되어 있음
+
+#### 5. 문서 (`doc/js-branch.md`)
+
+**충돌 타입**: `content` (양쪽에서 수정)
+
+- **해결**: 양쪽 내용 통합
+  - `js` 브랜치의 최신 내용 유지
+  - `main` 브랜치의 추가 정보 통합
+  - 머지 충돌 해결 섹션 추가 (현재 섹션)
+
+### 해결 원칙
+
+1. **실제 사용 코드 기준**: 코드베이스에서 실제로 사용 중인 필드명/함수 시그니처를 우선
+2. **간결성 우선**: 동일한 기능을 수행하는 경우 더 간단한 구현 선택
+3. **의도 파악**: 브랜치에서 의도적으로 제거/변경한 내용 존중
+4. **일관성 유지**: 기존 코드 스타일과 일관성 유지
+
+### 검증
+
+- ✅ 모든 타입 파일 린트 에러 없음
+- ✅ `utils.ts` 함수 사용처 확인 완료
+- ✅ `App.tsx` 라우팅 정상 동작 확인
+- ✅ `ArtistCarousel.tsx` 최신 기능 유지
 
 ---
 
