@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Search, Check, User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import Header from "@/components/Header";
-import { subscribeToArtist, unsubscribeFromArtist } from "@/lib/api/subscription";
+import { subscribeToArtist, unsubscribeFromArtist, getSubscriptions } from "@/lib/api/subscription";
 import { toast } from "sonner";
+import { getAllArtists } from "@/data/artistSchedules";
 
 interface Artist {
   id: number;
@@ -18,18 +19,35 @@ const ArtistList = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingIds, setLoadingIds] = useState<Set<number>>(new Set());
-  const [artists, setArtists] = useState<Artist[]>([
-    { id: 1, name: "실리카겔", isFollowing: true },
-    { id: 2, name: "장기하와 얼굴들", isFollowing: false },
-    { id: 3, name: "잔나비", isFollowing: false },
-    { id: 4, name: "혁오", isFollowing: true },
-    { id: 5, name: "새소년", isFollowing: false },
-    { id: 6, name: "딘딘", isFollowing: false },
-    { id: 7, name: "기리보이", isFollowing: true },
-    { id: 8, name: "에픽하이", isFollowing: false },
-    { id: 9, name: "버스커 버스커", isFollowing: false },
-    { id: 10, name: "10cm", isFollowing: true },
-  ]);
+  const [artists, setArtists] = useState<Artist[]>([]);
+
+  useEffect(() => {
+    const loadArtists = async () => {
+      const allArtistsData = getAllArtists();
+      const initialArtists: Artist[] = allArtistsData.map(artist => ({
+        ...artist,
+        isFollowing: false,
+      }));
+      setArtists(initialArtists);
+
+      const token = localStorage.getItem('accessToken');
+      if (!token) return;
+
+      try {
+        const subscriptions = await getSubscriptions();
+        const subscribedIds = new Set(subscriptions.map(s => s.artiProfileId));
+        
+        setArtists(prev => prev.map(artist => ({
+          ...artist,
+          isFollowing: subscribedIds.has(artist.id),
+        })));
+      } catch (error) {
+        console.error('구독 목록 로드 실패:', error);
+      }
+    };
+
+    loadArtists();
+  }, []);
 
   const filteredArtists = artists.filter((artist) =>
     artist.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -54,39 +72,21 @@ const ArtistList = () => {
       if (artist.isFollowing) {
         // 구독 취소
         await unsubscribeFromArtist(id);
-        setArtists(artists.map((a) => 
+        setArtists((prev) => prev.map((a) => 
           a.id === id ? { ...a, isFollowing: false } : a
         ));
         toast.success(`${artist.name} 구독을 취소했습니다.`);
       } else {
         // 구독하기
         await subscribeToArtist(id);
-        setArtists(artists.map((a) => 
+        setArtists((prev) => prev.map((a) => 
           a.id === id ? { ...a, isFollowing: true } : a
         ));
         toast.success(`${artist.name}을(를) 구독했습니다.`);
       }
     } catch (error: any) {
-      console.error('구독 토글 에러:', error);
-      console.error('에러 응답:', error.response?.data);
-      console.error('에러 상태:', error.response?.status);
-      
-      let errorMessage = 
-        error.response?.data?.message || 
-        error.response?.data?.error || 
-        error.message ||
-        artist.isFollowing ? '구독 취소에 실패했습니다.' : '구독하기에 실패했습니다.';
-      
-      // 네트워크 에러 또는 404 에러인 경우 (서버 다운타임 가능성)
-      if (!error.response || error.response?.status === 404) {
-        errorMessage = '서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.';
-      }
-      
-      // 403 에러인 경우
-      if (error.response?.status === 403) {
-        errorMessage = errorMessage || '권한이 없습니다. 로그인 상태를 확인해주세요.';
-      }
-      
+      const errorMessage = error.message || 
+        (artist.isFollowing ? '구독 취소에 실패했습니다.' : '구독하기에 실패했습니다.');
       toast.error(errorMessage);
     } finally {
       // 로딩 상태 제거
@@ -99,33 +99,33 @@ const ArtistList = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50">
       <Header />
       
       <div className="max-w-screen-xl mx-auto px-6 py-6">
         {/* 헤더 섹션 */}
         <div className="mb-6">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-5">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate(-1)}
-              className="h-9 w-9"
+              className="h-9 w-9 hover:bg-gray-100 rounded-lg"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-5 w-5 text-gray-700" />
             </Button>
-            <h1 className="text-2xl font-bold text-foreground">나의 아티스트 추가</h1>
+            <h1 className="text-2xl font-bold text-gray-900">나의 아티스트 추가</h1>
           </div>
           
           {/* 검색 입력 */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <Input
               type="text"
               placeholder="아티스트 검색"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12 rounded-xl border-border bg-background"
+              className="pl-11 h-12 rounded-xl border-gray-200 bg-white shadow-sm hover:shadow-md focus:shadow-md transition-shadow focus:border-primary/40"
             />
           </div>
         </div>
@@ -136,29 +136,33 @@ const ArtistList = () => {
             {filteredArtists.map((artist) => (
               <Card
                 key={artist.id}
-                className="border-0 shadow-sm bg-card hover:shadow-md transition-shadow cursor-pointer"
+                className="border border-gray-200/60 shadow-sm bg-white hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-all duration-200 cursor-pointer rounded-xl overflow-hidden"
                 onClick={() => navigate(`/artist/${artist.id}`)}
               >
-                <CardContent className="p-4">
-                  <div className="flex flex-col items-center gap-3">
+                <CardContent className="p-5">
+                  <div className="flex flex-col items-center gap-4">
                     <div className="relative">
-                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/10 to-primary/20 overflow-hidden flex items-center justify-center border-2 border-primary/20">
-                        <User className="w-10 h-10 text-primary" />
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/8 to-primary/12 overflow-hidden flex items-center justify-center border border-gray-200/60 shadow-sm">
+                        <User className="w-10 h-10 text-gray-600" />
                       </div>
                       {artist.isFollowing && (
-                        <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-sm">
-                          <Check className="w-3 h-3 text-primary-foreground" />
+                        <div className="absolute -bottom-0.5 -right-0.5 w-5.5 h-5.5 rounded-full bg-primary flex items-center justify-center border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]">
+                          <Check className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
                         </div>
                       )}
                     </div>
                     <div className="text-center w-full">
-                      <h3 className="text-sm font-semibold text-foreground truncate">
+                      <h3 className="text-sm font-semibold text-gray-900 truncate mb-3">
                         {artist.name}
                       </h3>
                       <Button
                         variant={artist.isFollowing ? "secondary" : "default"}
                         size="sm"
-                        className="mt-2 w-full h-8 text-xs"
+                        className={`mt-2 w-full h-9 text-xs font-medium rounded-lg transition-all duration-200 ${
+                          artist.isFollowing
+                            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200/60'
+                            : 'bg-primary text-white hover:bg-primary/90 shadow-sm hover:shadow-md'
+                        }`}
                         disabled={loadingIds.has(artist.id)}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -167,7 +171,7 @@ const ArtistList = () => {
                       >
                         {loadingIds.has(artist.id) ? (
                           <>
-                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
                             처리 중...
                           </>
                         ) : (
@@ -181,9 +185,12 @@ const ArtistList = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground mb-2">검색 결과가 없습니다</p>
-            <p className="text-sm text-muted-foreground">
+          <div className="text-center py-20">
+            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <Search className="w-8 h-8 text-gray-400" />
+            </div>
+            <p className="text-gray-700 font-medium mb-1.5">검색 결과가 없습니다</p>
+            <p className="text-sm text-gray-500">
               다른 키워드로 검색해보세요
             </p>
           </div>

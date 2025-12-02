@@ -28,6 +28,9 @@
   - Sonner 토스트 폰트 (Pretendard) 적용
   - Stereofidelic 폰트 정의 (`@font-face`)
   - Tailwind CSS 기본 스타일
+  - 페이지 전환 애니메이션 (fadeIn/fadeOut)
+  - 부드러운 스크롤 (`scroll-behavior: smooth`)
+  - 전역 트랜지션 효과 (색상, 배경, 테두리 등)
 
 #### 공통 라이브러리
 - **`src/lib/api.ts`** - Axios HTTP 클라이언트
@@ -39,9 +42,9 @@
   - `setupProfile()`, `refreshToken()`
   - 회원가입 API 응답 구조 변경 (토큰 없음, 회원 정보만 반환)
 - **`src/lib/api/subscription.ts`** - 구독 API 함수
-  - `subscribeToArtist()` - 아티스트 구독하기
-  - `unsubscribeFromArtist()` - 구독 취소하기
-  - `getSubscriptions()` - 구독 목록 조회 (미구현 상태)
+  - `subscribeToArtist()` - 아티스트 구독하기 (Mock: localStorage 사용)
+  - `unsubscribeFromArtist()` - 구독 취소하기 (Mock: localStorage 사용)
+  - `getSubscriptions()` - 구독 목록 조회 (Mock: localStorage 사용)
 
 #### 공통 컴포넌트
 - **`src/components/Header.tsx`** - 전역 헤더
@@ -56,6 +59,8 @@
 - **`src/App.tsx`** - 앱 루트 및 라우팅
   - 로그인 상태 기반 루트 경로 리다이렉트
   - 전역 Provider 설정
+  - 페이지 전환 시 자동 스크롤 맨 위로 이동
+  - 페이지 전환 애니메이션 적용 (`AnimatedRoutes` 컴포넌트)
 
 ### 페이지 파일
 
@@ -82,23 +87,35 @@
 - **`src/pages/Index.tsx`** - 홈 페이지
   - 아티스트 다중 선택 기능
   - 선택된 아티스트별 캘린더 일정 필터링
+  - 날짜 선택 시 해당 날짜의 공연 일정 표시 (`EventList` 컴포넌트)
+  - 구독한 아티스트 목록 자동 로드 및 업데이트
 - **`src/pages/ArtistList.tsx`** - 나의 아티스트 추가 페이지
   - 아티스트 검색 기능
-  - 구독하기/구독 취소 API 연동
+  - 구독하기/구독 취소 API 연동 (Mock 데이터 사용)
   - 로딩 상태 표시 및 에러 처리
+  - API 실패 시 기본 아티스트 데이터로 폴백
 - **`src/components/ArtistCarousel.tsx`** - 아티스트 캐러셀 컴포넌트
   - 캘린더 상단에 구독한 아티스트 표시
   - 아티스트 다중 선택 기능 (캘린더 일정 필터링용)
   - 선택된 아티스트 시각적 피드백 (테두리, 그림자, 색상)
-  - 구독하기/구독 취소 API 연동
+  - 구독하기/구독 취소 API 연동 (Mock 데이터 사용)
   - 로딩 상태 표시 및 에러 처리
+  - "펼쳐보기" 기능: 구독한 아티스트 목록 확장 표시
+  - 펼쳐보기 시 "구독한 아티스트" 안내 문구 및 총 인원수 표시
+  - 아티스트 클릭: 단일 클릭 시 캘린더 토글, 더블 클릭 시 상세 페이지 이동
+  - 아티스트별 장르 색상 구분 표시
+  - 아티스트별 간단한 설명 표시
 - **`src/components/Calendar.tsx`** - 캘린더 컴포넌트
   - 아티스트 선택 없으면 일정 표시 안 함 (안내 문구 표시)
-  - 선택된 아티스트별 색상 구분 일정 표시
-  - 날짜 칸 전체 색칠 제거, 작은 색상 점으로 일정 표시
-  - 오늘 날짜 표시: 연한 배경색 + "오늘" 텍스트 + primary 색상 숫자
+  - 선택된 아티스트별 색상 구분 일정 표시 
+  - 날짜 칸에 작은 색상 바와 아티스트 이름 표시
+  - 오늘 날짜 표시: 연한 배경색 + primary 색상 숫자
   - 선택된 아티스트 목록 표시 및 선택 해제 기능
   - 캘린더 그리드 배경 컨테이너 스타일 적용
+  - 모든 달에 5주(35일)까지만 표시, 5주차 이후 다른 달 날짜는 흐리게 표시
+  - 날짜 클릭 시 해당 날짜의 일정 표시 기능
+  - 월/년도 네비게이션 버튼 개선 (화살표 버튼에 호버 시 안내 텍스트 표시)
+  - 텍스트 가독성 개선 (아티스트 이름 크기 및 색상 대비 향상)
 
 ### 새로 생성된 파일
 
@@ -107,10 +124,23 @@
 - **`src/data/artistSchedules.ts`** - 아티스트 일정 데이터 (하드코딩)
   - 아티스트별 일정 날짜 및 색상 정의
   - 아티스트 일정 조회 유틸리티 함수
+  - 전체 아티스트 목록 조회 함수 (`getAllArtists()`)
+  - 특정 아티스트 정보 조회 함수 (`getArtistById()`)
+- **`src/data/artistEvents.ts`** - 공연 및 앨범 Mock 데이터
+  - 날짜별 공연 Mock 데이터 (12월 1일~31일)
+  - 아티스트별 앨범 Mock 데이터
+  - 선택된 날짜와 아티스트에 맞는 공연 이벤트 생성 함수 (`getEventsByDate()`)
+  - 아티스트별 공연 목록 조회 함수 (`getConcertsByArtist()`)
+  - 아티스트별 앨범 목록 조회 함수 (`getAlbumsByArtist()`)
+  - 모든 공연에 예매 URL 포함 (예매하기 버튼 표시용)
 - **`src/pages/Auth.tsx`** - 로그인/회원가입 선택 (온보딩 페이지)
 - **`src/pages/SignupType.tsx`** - 회원가입 유형 선택
 - **`src/pages/EmailVerification.tsx`** - 이메일 인증
 - **`src/components/GoogleIcon.tsx`** - 구글 아이콘 컴포넌트
+- **`src/components/EventList.tsx`** - 선택된 날짜의 공연 일정 목록 컴포넌트
+  - 아티스트별로 그룹화하여 표시
+  - 공연 카드 클릭 시 아티스트 상세 페이지로 이동
+  - 공연 이미지 없을 시 Mic 아이콘 표시
 - **`public/fonts/Stereofidelic.otf`** - BANDCHU 로고용 커스텀 폰트
 
 ---
@@ -133,9 +163,29 @@
 
 | Method | Endpoint | 설명 | 상태 |
 |--------|----------|------|------|
-| `POST` | `/api/subscriptions` | 아티스트 구독하기 | ⚠️ 연동 완료 (서버 다운타임 에러 해결 후 진행 예정) |
-| `DELETE` | `/api/subscriptions/{artiProfileId}` | 구독 취소하기 | ⚠️ 연동 완료 (서버 다운타임 에러 해결 후 진행 예정) |
-| `GET` | `/api/subscriptions` | 구독 목록 조회 | ⏸️ 미구현 |
+| `POST` | `/api/subscriptions` | 아티스트 구독하기 | 🔄 **Mock 데이터 사용** (localStorage 기반, API 연동 안 됨) |
+| `DELETE` | `/api/subscriptions/{artiProfileId}` | 구독 취소하기 | 🔄 **Mock 데이터 사용** (localStorage 기반, API 연동 안 됨) |
+| `GET` | `/api/subscriptions` | 구독 목록 조회 | 🔄 **Mock 데이터 사용** (localStorage 기반, API 연동 안 됨) |
+
+**참고**: 구독 API는 현재 Mock 데이터로 동작합니다. localStorage에 구독 정보를 저장하며, 실제 서버 API는 호출하지 않습니다.
+
+### 아티스트 API
+
+| Method | Endpoint | 설명 | 상태 |
+|--------|----------|------|------|
+| `GET` | `/api/artists` | 아티스트 목록 조회 | ⚠️ **API 실패 시 Mock 데이터로 폴백** |
+| `GET` | `/api/artists/{artistId}` | 아티스트 상세 조회 | ⚠️ **API 실패 시 Mock 데이터로 폴백** |
+
+**참고**: 아티스트 API는 먼저 서버 API를 호출하지만, 실패하거나 데이터가 없을 경우 Mock 데이터(`src/data/artistSchedules.ts`)로 폴백합니다.
+
+### 공연/앨범 API
+
+| Method | Endpoint | 설명 | 상태 |
+|--------|----------|------|------|
+| `GET` | `/api/concerts?artistId={artistId}` | 공연 목록 조회 | ⚠️ **API 실패 시 Mock 데이터로 폴백** |
+| `GET` | `/api/albums?artistId={artistId}` | 앨범 목록 조회 | ⚠️ **API 실패 시 Mock 데이터로 폴백** |
+
+**참고**: 공연/앨범 API는 먼저 서버 API를 호출하지만, 실패하거나 데이터가 없을 경우 Mock 데이터(`src/data/artistEvents.ts`)로 폴백합니다.
 
 ### API 설정
 
@@ -171,13 +221,40 @@
   - 10개 인디 아티스트의 12월 일정 데이터
   - 아티스트별 고유 색상 할당
   - 선택된 아티스트의 일정만 캘린더에 표시
+- **구독 데이터**: Mock 데이터 사용 (localStorage 기반)
+  - `getSubscriptions()`: localStorage에서 구독 목록 조회
+  - `subscribeToArtist()`: localStorage에 구독 추가
+  - `unsubscribeFromArtist()`: localStorage에서 구독 제거
+- **공연/앨범 데이터**: Mock 데이터 사용 (`src/data/artistEvents.ts`)
+  - 날짜별 공연 정보
+  - 아티스트별 앨범 정보
+  - API 실패 시 Mock 데이터로 폴백
 
 ### 캘린더 기능
 
 - **아티스트 선택**: 다중 선택 가능, 선택된 아티스트의 일정만 표시
-- **일정 표시**: 날짜 칸 하단에 작은 색상 점으로 표시 (아티스트별 색상 구분)
-- **오늘 날짜**: 연한 배경색 + "오늘" 텍스트 + primary 색상 숫자
+- **일정 표시**: 구글 캘린더 스타일 - 날짜 칸에 작은 색상 바와 아티스트 이름 표시 (아티스트별 색상 구분)
+- **오늘 날짜**: 연한 배경색 + primary 색상 숫자
 - **선택 안내**: 아티스트 선택 없으면 안내 문구 표시
+- **날짜 선택**: 날짜 클릭 시 해당 날짜의 공연 일정이 하단에 표시됨
+- **월 표시 제한**: 모든 달에 5주(35일)까지만 표시, 5주차 이후 다른 달 날짜는 흐리게 표시
+- **텍스트 가독성**: 아티스트 이름 크기 및 색상 대비 향상 (흰색 텍스트, 그림자 효과)
+- **월 네비게이션**: 이전/다음 달 이동 버튼, 호버 시 안내 텍스트 표시
+
+### 공연 및 앨범 Mock 데이터
+
+- **공연 데이터**: 12월 1일~31일 모든 날짜에 공연 정보 포함
+- **앨범 데이터**: 각 아티스트별 앨범 정보 포함
+- **예매 URL**: 모든 공연에 예매 URL 포함 (예매하기 버튼 표시용)
+- **기본 이미지**: 공연 포스터/앨범 커버 이미지 없을 시 Lucide 아이콘 표시
+  - 공연: Mic 아이콘
+  - 앨범: PlayCircle 아이콘
+
+### 페이지 전환 애니메이션
+
+- **fadeIn/fadeOut**: 페이지 전환 시 부드러운 페이드 효과
+- **스크롤 처리**: 페이지 전환 시 자동으로 맨 위로 스크롤
+- **전역 트랜지션**: 색상, 배경, 테두리 등에 부드러운 전환 효과 적용
 
 ### 에러 처리
 
@@ -201,7 +278,20 @@
 
 ## 향후 작업
 
-- [ ] 구글 OAuth 로그인 구현
+### API 연동
+- [ ] 구독 API 실제 연동 (`/api/subscriptions`)
+  - 현재 Mock 데이터(localStorage) 사용 중
+  - `POST /api/subscriptions` - 아티스트 구독하기
+  - `DELETE /api/subscriptions/{artiProfileId}` - 구독 취소하기
+  - `GET /api/subscriptions` - 구독 목록 조회
+- [ ] 아티스트 API 실제 연동 (`/api/artists`)
+  - 현재 API 실패 시 Mock 데이터로 폴백
+  - `GET /api/artists` - 아티스트 목록 조회
+  - `GET /api/artists/{artistId}` - 아티스트 상세 조회
+- [ ] 공연/앨범 API 실제 연동
+  - 현재 API 실패 시 Mock 데이터로 폴백
+  - `GET /api/concerts?artistId={artistId}` - 공연 목록 조회
+  - `GET /api/albums?artistId={artistId}` - 앨범 목록 조회
 
 ---
 

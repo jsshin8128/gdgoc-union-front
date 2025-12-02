@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { CalendarEvent } from "@/types/calendarEvent";
 import { useMemo } from "react";
 import { format } from "date-fns";
+import { Mic } from "lucide-react";
 
 const getTicketSiteName = (url?: string): string | null => {
   if (!url) return null;
@@ -68,13 +69,16 @@ const EventList = ({ events = [] }: EventListProps) => {
               return (
                 <Card 
                   key={`${event.concertId}-${event.type}-${event.scheduleId || event.dateTime}`} 
-                  className="overflow-hidden hover:shadow-lg transition-shadow"
+                  className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/artist/${event.artistId}`)}
                 >
                   <div className="flex gap-4 p-4">
                     {event.imageUrl ? (
                       <img src={event.imageUrl} alt={event.title} className="w-20 h-20 rounded-lg object-cover bg-muted flex-shrink-0" />
                     ) : (
-                      <div className="w-20 h-20 rounded-lg bg-muted flex-shrink-0" />
+                      <div className="w-20 h-20 rounded-lg bg-muted flex-shrink-0 flex items-center justify-center">
+                        <Mic className="w-8 h-8 text-muted-foreground/50" />
+                      </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-muted-foreground mb-1">

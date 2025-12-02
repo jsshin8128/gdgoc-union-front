@@ -8,10 +8,12 @@ interface CalendarProps {
   eventDates?: number[];
   selectedArtistIds?: number[];
   onClearSelection?: () => void;
+  subscribedArtistIds?: number[];
 }
 
-const Calendar = ({ onDateSelect, eventDates = [], selectedArtistIds = [], onClearSelection }: CalendarProps) => {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 11, 1)); // December 2025
+const Calendar = ({ onDateSelect, eventDates = [], selectedArtistIds = [], onClearSelection, subscribedArtistIds = [] }: CalendarProps) => {
+  const now = new Date();
+  const [currentDate, setCurrentDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
 
   const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -22,6 +24,9 @@ const Calendar = ({ onDateSelect, eventDates = [], selectedArtistIds = [], onCle
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const prevMonthDays = new Date(year, month, 0).getDate();
+    
+    // 모든 달에 대해 5주(35일)까지만 표시
+    const maxDays = 35;
     
     const days: (number | null)[] = [];
     
@@ -35,17 +40,28 @@ const Calendar = ({ onDateSelect, eventDates = [], selectedArtistIds = [], onCle
       days.push(i);
     }
     
-    // Next month days
-    const remainingDays = 42 - days.length;
-    for (let i = 1; i <= remainingDays; i++) {
-      days.push(i);
+    // Next month days (only if we need to fill up to maxDays)
+    const remainingDays = maxDays - days.length;
+    if (remainingDays > 0) {
+      for (let i = 1; i <= remainingDays; i++) {
+        days.push(i);
+      }
     }
     
     return { days, firstDay, daysInMonth };
   };
 
   const { days, firstDay, daysInMonth } = getDaysInMonth(currentDate);
-  const today = 8; // Based on the reference image
+  
+  // 실제 오늘 날짜 확인
+  const isToday = (day: number): boolean => {
+    const today = new Date();
+    return (
+      currentDate.getFullYear() === today.getFullYear() &&
+      currentDate.getMonth() === today.getMonth() &&
+      day === today.getDate()
+    );
+  };
 
   const goToPrevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -55,14 +71,12 @@ const Calendar = ({ onDateSelect, eventDates = [], selectedArtistIds = [], onCle
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
-  const goToToday = () => {
-    setCurrentDate(new Date(2025, 11, 1));
-  };
 
   const handleDateClick = (day: number, isCurrentMonth: boolean) => {
     if (isCurrentMonth) {
+      const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
       setSelectedDate(day);
-      onDateSelect?.(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
+      onDateSelect?.(clickedDate);
     }
   };
 
@@ -98,31 +112,35 @@ const Calendar = ({ onDateSelect, eventDates = [], selectedArtistIds = [], onCle
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1 ml-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={goToPrevMonth} 
-            className="h-9 w-9 hover:bg-muted/50"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={goToToday} 
-            className="h-9 px-4 text-xs font-medium border-border/50 hover:bg-muted/30"
-          >
-            오늘
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={goToNextMonth} 
-            className="h-9 w-9 hover:bg-muted/50"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center gap-2 ml-4">
+          <div className="flex flex-col items-center group">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={goToPrevMonth} 
+              className="h-10 w-10 border-border/50 hover:bg-muted/60 hover:border-primary/30 transition-all"
+              aria-label="이전 달"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <span className="text-[10px] text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              이전 달
+            </span>
+          </div>
+          <div className="flex flex-col items-center group">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={goToNextMonth} 
+              className="h-10 w-10 border-border/50 hover:bg-muted/60 hover:border-primary/30 transition-all"
+              aria-label="다음 달"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+            <span className="text-[10px] text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              다음 달
+            </span>
+          </div>
         </div>
       </div>
 
@@ -144,26 +162,43 @@ const Calendar = ({ onDateSelect, eventDates = [], selectedArtistIds = [], onCle
           <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center mb-4">
             <CalendarDays className="w-8 h-8 text-muted-foreground/50" />
           </div>
-          <p className="text-base font-medium text-foreground mb-1.5">
-            아티스트를 선택하면 일정을 확인할 수 있어요
-          </p>
-          <p className="text-sm text-muted-foreground">
-            상단의 아티스트를 클릭해보세요
-          </p>
+          {subscribedArtistIds.length === 0 ? (
+            <>
+              <p className="text-base font-medium text-foreground mb-1.5">
+                구독한 아티스트가 없습니다
+              </p>
+              <p className="text-sm text-muted-foreground">
+                아티스트를 구독하면 일정을 확인할 수 있어요
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-base font-medium text-foreground mb-1.5">
+                아티스트를 선택하면 일정을 확인할 수 있어요
+              </p>
+              <p className="text-sm text-muted-foreground">
+                상단의 아티스트를 클릭해보세요
+              </p>
+            </>
+          )}
         </div>
       )}
       
       {selectedArtistIds.length > 0 && (
-        <div className="grid grid-cols-7 gap-0.5 bg-muted/20 p-1 rounded-2xl">
+        <div className="grid grid-cols-7 gap-0.5 bg-gray-50/50 p-1 rounded-2xl">
           {days.map((day, index) => {
             const isCurrentMonth = 
               (index >= firstDay && index < firstDay + daysInMonth);
-            const isToday = day === today && isCurrentMonth;
+            const isWeek5OrLater = index >= 28; // 5주차 이후 (28일부터)
+            const isOtherMonthInWeek5 = isWeek5OrLater && !isCurrentMonth; // 5주차 이후의 다른 달 날짜
+            const todayCheck = day !== null && isCurrentMonth ? isToday(day) : false;
             const isWeekend = index % 7 === 0 || index % 7 === 6;
             const isSelected = selectedDate === day && isCurrentMonth;
             
-            // 선택된 아티스트의 일정만 표시
-            const artistsOnDate = day !== null && isCurrentMonth ? getArtistsByDate(day) : [];
+            // 선택된 아티스트의 일정만 표시 (현재는 12월 데이터만 있으므로 12월일 때만 표시)
+            const artistsOnDate = day !== null && isCurrentMonth && currentDate.getMonth() === 11 
+              ? getArtistsByDate(day) 
+              : [];
             const filteredArtists = artistsOnDate.filter((id) => selectedArtistIds.includes(id));
             
             const hasEvent = filteredArtists.length > 0;
@@ -173,36 +208,48 @@ const Calendar = ({ onDateSelect, eventDates = [], selectedArtistIds = [], onCle
               key={index}
               onClick={() => day !== null && handleDateClick(day, isCurrentMonth)}
               className={`
-                aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-medium
+                aspect-square rounded-lg flex flex-col items-start p-1.5 text-sm font-medium
                 transition-all duration-150 relative group
-                ${!isCurrentMonth ? "text-muted-foreground/10" : ""}
-                ${isWeekend && isCurrentMonth ? "text-calendar-weekend" : isCurrentMonth ? "text-foreground" : ""}
-                ${isToday ? "bg-primary/10" : ""}
-                ${isSelected && !isToday ? "bg-muted/60 ring-1 ring-border" : ""}
-                ${!hasEvent && isCurrentMonth && !isToday && !isSelected ? "hover:bg-muted/40" : ""}
-                ${hasEvent && !isToday ? "hover:bg-muted/30" : ""}
+                ${!isCurrentMonth ? "text-gray-300 opacity-50" : ""}
+                ${isOtherMonthInWeek5 ? "opacity-30" : ""}
+                ${isWeekend && isCurrentMonth ? "text-gray-500" : isCurrentMonth ? "text-gray-700" : ""}
+                ${todayCheck ? "bg-primary/10 border border-primary/30" : ""}
+                ${isSelected && !todayCheck ? "bg-primary/5 border border-primary/20" : ""}
+                ${!hasEvent && isCurrentMonth && !todayCheck && !isSelected ? "hover:bg-gray-100/60" : ""}
+                ${hasEvent && !todayCheck ? "hover:bg-gray-100/50" : ""}
               `}
             >
-              <div className="flex flex-col items-center gap-0.5 relative z-10">
-                <span className={`${isToday ? "font-bold text-primary" : isSelected ? "font-semibold" : ""}`}>
+              <div className="flex items-center justify-center w-full mb-0.5">
+                <span className={`text-sm ${
+                  todayCheck ? "font-bold text-primary" 
+                  : isSelected ? "font-semibold text-gray-900" 
+                  : isCurrentMonth ? "font-semibold text-gray-800"
+                  : "font-medium text-gray-400"
+                }`}>
                   {day}
-                </span>
-                <span className={`text-[10px] font-medium ${isToday ? "text-primary" : "text-muted-foreground/0"}`}>
-                  {isToday ? "오늘" : ""}
                 </span>
               </div>
               {hasEvent && (
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1 items-center justify-center flex-wrap max-w-[85%] z-10">
-                  {filteredArtists.slice(0, 3).map((artistId) => (
-                    <div
-                      key={artistId}
-                      className={`w-2 h-2 rounded-full ${getArtistColor(artistId)} shadow-sm`}
-                      title={getArtistName(artistId) || ""}
-                    />
-                  ))}
-                  {filteredArtists.length > 3 && (
-                    <div className="w-2 h-2 rounded-full bg-muted-foreground/30 flex items-center justify-center">
-                      <span className="text-[8px] text-muted-foreground font-bold">+</span>
+                <div className="w-full space-y-0.5 mt-0.5 flex-1 overflow-hidden">
+                  {filteredArtists.slice(0, 2).map((artistId) => {
+                    const artistName = getArtistName(artistId);
+                    const color = getArtistColor(artistId);
+                    return (
+                      <div
+                        key={artistId}
+                        className={`text-[10px] px-2 py-1 rounded truncate font-semibold text-white ${color} shadow-sm`}
+                        style={{ 
+                          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                        }}
+                        title={artistName || ""}
+                      >
+                        {artistName}
+                      </div>
+                    );
+                  })}
+                  {filteredArtists.length > 2 && (
+                    <div className="text-[10px] px-2 py-1 rounded bg-gray-400 text-white font-semibold truncate shadow-sm">
+                      +{filteredArtists.length - 2}
                     </div>
                   )}
                 </div>
