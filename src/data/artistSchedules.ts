@@ -114,3 +114,22 @@ export const getArtistsByDate = (date: number): number[] => {
     .map((schedule) => schedule.artistId);
 };
 
+// 전체 아티스트 목록 반환 (ID와 이름만)
+export interface ArtistBasicInfo {
+  id: number;
+  name: string;
+}
+
+export const getAllArtists = (): ArtistBasicInfo[] => {
+  return artistSchedules.map((schedule) => ({
+    id: schedule.artistId,
+    name: schedule.artistName,
+  }));
+};
+
+// 특정 ID의 아티스트 정보 반환
+export const getArtistById = (artistId: number): ArtistBasicInfo | null => {
+  const schedule = artistSchedules.find((s) => s.artistId === artistId);
+  return schedule ? { id: schedule.artistId, name: schedule.artistName } : null;
+};
+
