@@ -3,13 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, Plus, Search, Heart, MessageCircle, UserPlus, MessageSquare } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import {
-Popover,
-PopoverContent,
-PopoverTrigger,
-
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import {toast} from "sonner";
+import { toast } from "sonner";
 
 const PostDetail = () => {
   const { boardId, postId } = useParams();
@@ -43,12 +42,14 @@ const PostDetail = () => {
       likes: 3,
     },
   ];
-const handleAddFriend = (username: string) => {
+
+  const handleAddFriend = (username: string) => {
     toast.success(`${username}님에게 친구 요청을 보냈습니다.`);
   };
 
   const handleStartChat = (username: string) => {
-    navigate(`/chat/${username}`);
+    const boardName = boardId === "free" ? "자유 게시판" : boardId === "companion" ? "동행 게시판" : "공지";
+    navigate(`/chat/${username}?user=${username}&board=${encodeURIComponent(boardName)}`);
   };
 
   const UserPopover = ({ username }: { username: string }) => (
@@ -111,7 +112,7 @@ const handleAddFriend = (username: string) => {
         <div className="bg-card rounded-lg p-4 mb-6">
           <h1 className="text-xl font-bold text-foreground mb-3">{post.title}</h1>
           <div className="text-sm text-muted-foreground mb-4">
-             <UserPopover username={post.author} /> · {post.date}
+            <UserPopover username={post.author} /> · {post.date}
           </div>
           <div className="text-foreground whitespace-pre-wrap mb-6">{post.content}</div>
           <button

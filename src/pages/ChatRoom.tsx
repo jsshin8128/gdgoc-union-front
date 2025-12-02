@@ -1,21 +1,57 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Plus, Search, Settings, Smile, ThumbsUp, Send } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+
+interface Message {
+  id: number;
+  sender: string;
+  text: string;
+  time: string;
+  isMine: boolean;
+}
 
 const ChatRoom = () => {
   const navigate = useNavigate();
   const { roomId } = useParams();
+  const [searchParams] = useSearchParams();
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([
-    { id: 1, sender: "Martha Craig", text: "안녕하세요 !", time: "10:30", isMine: false },
-    { id: 2, sender: "Martha Craig", text: "게시판 보고 연락했습니다", time: "10:31", isMine: false },
-  ]);
+  
+  // Get username and board info from URL params or roomId
+  const usernameFromParam = searchParams.get("user");
+  const boardFromParam = searchParams.get("board");
+  
+  // Mock data for existing chat rooms
+  const existingRooms: Record<string, { name: string; board: string; messages: Message[] }> = {
+    "1": {
+      name: "roseinseo",
+      board: "자유 게시판",
+      messages: [
+        { id: 1, sender: "roseinseo", text: "안녕하세요!", time: "10:30", isMine: false },
+        { id: 2, sender: "roseinseo", text: "게시판 보고 연락했습니다", time: "10:31", isMine: false },
+      ],
+    },
+    "2": {
+      name: "haril_lemon",
+      board: "동행 게시판",
+      messages: [
+        { id: 1, sender: "haril_lemon", text: "안녕하세요!", time: "09:00", isMine: false },
+      ],
+    },
+    "3": {
+      name: "m_cylin01",
+      board: "자유 게시판",
+      messages: [],
+    },
+  };
 
-  // Mock room data
-  const roomName = roomId === "1" ? "roseinseo" : roomId === "2" ? "haril_lemon" : "Martha Craig";
+  // Determine room info - from URL params (new chat) or existing rooms
+  const existingRoom = roomId ? existingRooms[roomId] : null;
+  const roomName = usernameFromParam || existingRoom?.name || roomId || "Unknown";
+  const initialMessages = usernameFromParam ? [] : (existingRoom?.messages || []);
+  
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
 
   const handleSend = () => {
     if (message.trim()) {
