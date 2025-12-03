@@ -154,7 +154,7 @@ const MyArtistProfile = () => {
           <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/30 to-black/70" />
           
           {profileExists && (
-            <Button variant="ghost" size="icon" className="absolute top-12 right-4 z-20 bg-white/10 backdrop-blur-md hover:bg-white/20 rounded-full border border-white/20" onClick={() => setIsEditProfileModalOpen(true)}>
+            <Button variant="ghost" size="icon" className="absolute top-6 right-4 z-20 bg-white/10 backdrop-blur-md hover:bg-white/20 rounded-full border border-white/20" onClick={() => setIsEditProfileModalOpen(true)}>
               <Edit className="h-5 w-5 text-white" />
             </Button>
           )}
