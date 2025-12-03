@@ -47,7 +47,9 @@ const MyArtistProfile = () => {
       const response = await getMyArtistProfile();
       if (response.isExists) {
         setArtist(response.artist || null);
-        setAlbums(response.albums || []);
+        // 발매일 최신순으로 정렬
+        const sortedAlbums = (response.albums || []).sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
+        setAlbums(sortedAlbums);
         setConcerts(response.concerts || []);
         setProfileExists(true);
       } else {

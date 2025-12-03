@@ -91,7 +91,9 @@ const ArtistDetail = () => {
       setAlbumsLoading(true);
       try {
         const albumsData = await getAlbumsByArtistId(artistId);
-        setAlbums(albumsData || []);
+        // 발매일 최신순으로 정렬
+        const sortedAlbums = albumsData.sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
+        setAlbums(sortedAlbums || []);
       } catch (err) {
         console.error("앨범 정보를 불러오는 데 실패했습니다.", err);
         setAlbums([]); // 에러 발생 시 빈 배열로 설정
