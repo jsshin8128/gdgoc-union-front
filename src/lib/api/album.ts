@@ -38,3 +38,12 @@ export const getAlbumById = async (albumId: string): Promise<Album> => {
     throw error;
   }
 };
+
+export const deleteAlbum = async (albumId: string): Promise<void> => {
+  try {
+    await apiClient.delete(`/api/albums/${albumId}`);
+  } catch (error) {
+    console.error(`Failed to delete album with id ${albumId}:`, error);
+    throw error;
+  }
+};
