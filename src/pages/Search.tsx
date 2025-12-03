@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { searchByKeyword } from "@/lib/api/search";
+import { searchByKeyword } from "@/lib/api/search"; // GET /api/artists/search 호출
 import { SearchResponse, ArtistSearchResult, ConcertSearchResult } from "@/types/search";
 
 const Search = () => {
@@ -16,9 +16,10 @@ const Search = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // 검색어 디바운싱 로직 (300ms)
     const handler = setTimeout(() => {
       setDebouncedQuery(query);
-    }, 300); // 300ms debounce delay
+    }, 300);
 
     return () => {
       clearTimeout(handler);
@@ -26,6 +27,7 @@ const Search = () => {
   }, [query]);
 
   useEffect(() => {
+    // 디바운싱된 검색어로 백엔드 통합 검색 API 호출
     const performSearch = async () => {
       if (!debouncedQuery.trim()) {
         setResults(null);
@@ -35,6 +37,7 @@ const Search = () => {
 
       setLoading(true);
       try {
+        // 백엔드 통합 검색 API 호출 (GET /api/artists/search)
         const searchResults = await searchByKeyword(debouncedQuery);
         setResults(searchResults);
       } catch (error) {
@@ -53,8 +56,7 @@ const Search = () => {
   };
 
   const handleConcertClick = (concert: ConcertSearchResult) => {
-    // TODO: Navigate to concert detail page
-    console.log("Navigating to concert:", concert.concertId);
+    navigate(`/concert/${concert.concertId}`); // TODO: 공연 상세 페이지 경로에 맞게 수정
   };
 
   const hasResults = results && (results.artists.length > 0 || results.concerts.length > 0);
