@@ -38,3 +38,16 @@ export function parseJwt(token: string) {
     return null;
   }
 }
+
+export const getTicketVendor = (url: string): string | null => {
+  if (!url) return null;
+  try {
+    const hostname = new URL(url).hostname;
+    if (hostname.includes("ticket.yes24.com")) return "YES24 티켓";
+    if (hostname.includes("interpark.com")) return "NOL 티켓";
+    if (hostname.includes("ticket.melon.com")) return "멜론 티켓";
+    return null; // 모르는 URL의 경우 null 반환
+  } catch { 
+    return null; // 에러 발생 시 null 반환
+  }
+};
