@@ -8,7 +8,7 @@ export class WebSocketClient {
     private messageHandlers: Map<number, (message: ChatMessage) => void> = new Map();
     private connectionPromise: Promise<void> | null = null;
 
-    constructor(private baseUrl: string) { }
+    constructor(private baseUrl: string) {}
 
     /**
      * WebSocket 연결
@@ -20,29 +20,47 @@ export class WebSocketClient {
 
         this.connectionPromise = new Promise((resolve, reject) => {
             try {
-                // SockJS를 사용한 WebSocket 연결
-                const socket = new SockJS(`${this.baseUrl}/ws-chat`);
+                /**
+                 * 🔥 여기서 HTTPS 환경에 맞춰 URL 보정
+                 */
+                let wsBaseUrl = this.baseUrl;
+
+                // baseUrl 미입력 시 → 현재 페이지 origin 자동 사용
+                if (!wsBaseUrl) {
+                    wsBaseUrl = window.location.origin;
+                }
+
+                // HTTP → WS, HTTPS → WSS 로 자동 변환
+                if (wsBaseUrl.startsWith("https://")) {
+                    wsBaseUrl = wsBaseUrl.replace("https://", "https://"); // SockJS 자동 처리
+                } else if (wsBaseUrl.startsWith("http://")) {
+                    wsBaseUrl = wsBaseUrl.replace("http://", "http://");
+                }
+
+                const socket = new SockJS(`${wsBaseUrl}/ws-chat`);
 
                 this.client = new Client({
                     webSocketFactory: () => socket as any,
-                    debug: (str) => {
-                        console.log('[STOMP Debug]', str);
-                    },
+                    debug: (str) => console.log('[STOMP Debug]', str),
                     reconnectDelay: 5000,
                     heartbeatIncoming: 4000,
                     heartbeatOutgoing: 4000,
+
                     onConnect: () => {
                         console.log('✅ WebSocket Connected');
                         resolve();
                     },
+
                     onStompError: (frame) => {
                         console.error('❌ STOMP Error:', frame);
                         reject(new Error(frame.headers['message'] || 'STOMP connection failed'));
                     },
+
                     onWebSocketError: (event) => {
                         console.error('❌ WebSocket Error:', event);
                         reject(new Error('WebSocket connection failed'));
                     },
+
                     onDisconnect: () => {
                         console.log('🔌 WebSocket Disconnected');
                         this.connectionPromise = null;
@@ -90,9 +108,6 @@ export class WebSocketClient {
         console.log(`✅ Subscribed to room ${roomId}`);
     }
 
-    /**
-     * 채팅방 구독 해제
-     */
     unsubscribe(roomId: number): void {
         const subscription = this.subscriptions.get(roomId);
         if (subscription) {
@@ -103,9 +118,6 @@ export class WebSocketClient {
         }
     }
 
-    /**
-     * 모든 구독 해제
-     */
     unsubscribeAll(): void {
         this.subscriptions.forEach((subscription, roomId) => {
             subscription.unsubscribe();
@@ -115,9 +127,6 @@ export class WebSocketClient {
         this.messageHandlers.clear();
     }
 
-    /**
-     * WebSocket 연결 해제
-     */
     disconnect(): void {
         this.unsubscribeAll();
         if (this.client) {
@@ -128,9 +137,6 @@ export class WebSocketClient {
         }
     }
 
-    /**
-     * 연결 상태 확인
-     */
     isConnected(): boolean {
         return this.client?.connected ?? false;
     }
@@ -144,16 +150,12 @@ let wsClient: WebSocketClient | null = null;
  */
 export const getWebSocketClient = (baseUrl: string = ''): WebSocketClient => {
     if (!wsClient) {
-        // 로컬 백엔드 사용
-        const url = baseUrl || 'http://localhost:8080';  // 변경
-        wsClient = new WebSocketClient(url);
+        // baseUrl 없이 호출되면 window.origin 자동 사용
+        wsClient = new WebSocketClient(baseUrl || '');
     }
     return wsClient;
 };
 
-/**
- * WebSocket 클라이언트 정리
- */
 export const cleanupWebSocket = (): void => {
     if (wsClient) {
         wsClient.disconnect();
