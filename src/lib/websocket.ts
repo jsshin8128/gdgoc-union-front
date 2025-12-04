@@ -1,0 +1,162 @@
+import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+import { ChatMessage } from '@/types/chat';
+
+export class WebSocketClient {
+    private client: Client | null = null;
+    private subscriptions: Map<number, StompSubscription> = new Map();
+    private messageHandlers: Map<number, (message: ChatMessage) => void> = new Map();
+    private connectionPromise: Promise<void> | null = null;
+
+    constructor(private baseUrl: string) { }
+
+    /**
+     * WebSocket 연결
+     */
+    connect(): Promise<void> {
+        if (this.connectionPromise) {
+            return this.connectionPromise;
+        }
+
+        this.connectionPromise = new Promise((resolve, reject) => {
+            try {
+                // SockJS를 사용한 WebSocket 연결
+                const socket = new SockJS(`${this.baseUrl}/ws-chat`);
+
+                this.client = new Client({
+                    webSocketFactory: () => socket as any,
+                    debug: (str) => {
+                        console.log('[STOMP Debug]', str);
+                    },
+                    reconnectDelay: 5000,
+                    heartbeatIncoming: 4000,
+                    heartbeatOutgoing: 4000,
+                    onConnect: () => {
+                        console.log('✅ WebSocket Connected');
+                        resolve();
+                    },
+                    onStompError: (frame) => {
+                        console.error('❌ STOMP Error:', frame);
+                        reject(new Error(frame.headers['message'] || 'STOMP connection failed'));
+                    },
+                    onWebSocketError: (event) => {
+                        console.error('❌ WebSocket Error:', event);
+                        reject(new Error('WebSocket connection failed'));
+                    },
+                    onDisconnect: () => {
+                        console.log('🔌 WebSocket Disconnected');
+                        this.connectionPromise = null;
+                    },
+                });
+
+                this.client.activate();
+            } catch (error) {
+                console.error('❌ Failed to initialize WebSocket:', error);
+                this.connectionPromise = null;
+                reject(error);
+            }
+        });
+
+        return this.connectionPromise;
+    }
+
+    /**
+     * 채팅방 구독
+     */
+    async subscribe(roomId: number, onMessage: (message: ChatMessage) => void): Promise<void> {
+        await this.connect();
+
+        if (!this.client?.connected) {
+            throw new Error('WebSocket is not connected');
+        }
+
+        // 이미 구독 중이면 해제
+        if (this.subscriptions.has(roomId)) {
+            this.unsubscribe(roomId);
+        }
+
+        const subscription = this.client.subscribe(`/topic/chatroom.${roomId}`, (message: IMessage) => {
+            try {
+                const chatMessage: ChatMessage = JSON.parse(message.body);
+                console.log('📨 Received message:', chatMessage);
+                onMessage(chatMessage);
+            } catch (error) {
+                console.error('❌ Failed to parse message:', error);
+            }
+        });
+
+        this.subscriptions.set(roomId, subscription);
+        this.messageHandlers.set(roomId, onMessage);
+        console.log(`✅ Subscribed to room ${roomId}`);
+    }
+
+    /**
+     * 채팅방 구독 해제
+     */
+    unsubscribe(roomId: number): void {
+        const subscription = this.subscriptions.get(roomId);
+        if (subscription) {
+            subscription.unsubscribe();
+            this.subscriptions.delete(roomId);
+            this.messageHandlers.delete(roomId);
+            console.log(`✅ Unsubscribed from room ${roomId}`);
+        }
+    }
+
+    /**
+     * 모든 구독 해제
+     */
+    unsubscribeAll(): void {
+        this.subscriptions.forEach((subscription, roomId) => {
+            subscription.unsubscribe();
+            console.log(`✅ Unsubscribed from room ${roomId}`);
+        });
+        this.subscriptions.clear();
+        this.messageHandlers.clear();
+    }
+
+    /**
+     * WebSocket 연결 해제
+     */
+    disconnect(): void {
+        this.unsubscribeAll();
+        if (this.client) {
+            this.client.deactivate();
+            this.client = null;
+            this.connectionPromise = null;
+            console.log('🔌 WebSocket Disconnected');
+        }
+    }
+
+    /**
+     * 연결 상태 확인
+     */
+    isConnected(): boolean {
+        return this.client?.connected ?? false;
+    }
+}
+
+// 싱글톤 인스턴스
+let wsClient: WebSocketClient | null = null;
+
+/**
+ * WebSocket 클라이언트 인스턴스 가져오기
+ */
+export const getWebSocketClient = (baseUrl: string = ''): WebSocketClient => {
+    if (!wsClient) {
+        // 로컬 백엔드 사용
+        const url = baseUrl || 'http://localhost:8080';  // 변경
+        wsClient = new WebSocketClient(url);
+    }
+    return wsClient;
+};
+
+/**
+ * WebSocket 클라이언트 정리
+ */
+export const cleanupWebSocket = (): void => {
+    if (wsClient) {
+        wsClient.disconnect();
+        wsClient = null;
+    }
+};
