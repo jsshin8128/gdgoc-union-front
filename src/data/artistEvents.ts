@@ -147,7 +147,7 @@ const mockAlbums: Record<number, Array<{
 };
 
 // 선택된 날짜와 아티스트에 맞는 공연 이벤트 생성
-export const getEventsByDate = (date: Date, artistIds: number[]): CalendarEvent[] => {
+export const getEventsByDate = (date: Date, artistIds: number[], artistNameMap?: Record<number, string>): CalendarEvent[] => {
   const day = date.getDate();
   const month = date.getMonth();
   
@@ -165,9 +165,12 @@ export const getEventsByDate = (date: Date, artistIds: number[]): CalendarEvent[
       const dateStr = `${year}-${monthStr}-${dayStr}`;
       const dateTime = `${dateStr}T${concert.time}:00+09:00`;
       
+      // API에서 받은 아티스트 이름 맵이 있으면 사용, 없으면 하드코딩된 데이터 사용 (폴백)
+      const artistName = artistNameMap?.[concert.artistId] || getArtistName(concert.artistId) || '';
+      
       events.push({
         artistId: concert.artistId,
-        artistName: getArtistName(concert.artistId) || '',
+        artistName: artistName,
         concertId: concert.artistId * 1000 + day,
         scheduleId: index,
         date: dateStr,
@@ -197,14 +200,14 @@ export const getConcertsByArtist = (artistId: number): Concert[] => {
         const dateStr = date.toISOString().split('T')[0];
         
         concerts.push({
-          concertId: artistId * 1000 + dayNum,
+          concertId: artistId * 1000 + dayNum + index,
           title: concert.title,
           place: concert.place,
           posterImageUrl: '',
           information: `${getArtistName(artistId)}의 ${concert.title}`,
           bookingSchedule: concert.bookingUrl ? dateStr : '',
           bookingUrl: concert.bookingUrl || '',
-          performingSchedule: [{ id: 1, date: dateStr }],
+          performingSchedule: [{ id: index + 1, date: dateStr }],
           createdAt: new Date().toISOString(),
         });
       }
@@ -218,6 +221,7 @@ export const getConcertsByArtist = (artistId: number): Concert[] => {
 export const getAlbumsByArtist = (artistId: number): Album[] => {
   const albums = mockAlbums[artistId] || [];
   
+  // Fallback 시 하드코딩된 이름 그대로 사용
   return albums.map((album, index) => ({
     albumId: artistId * 100 + index + 1,
     name: album.name,
