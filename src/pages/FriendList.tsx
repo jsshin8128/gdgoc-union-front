@@ -5,7 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, MessageCircle, User } from "lucide-react";
+import { ArrowLeft, MessageCircle, User, Loader2, UserPlus } from "lucide-react";
 import { getFriends, FriendResponse } from "@/lib/api/friends";
 import { getOrCreateChatRoom } from "@/lib/chatstore";
 import { toast } from "sonner";
@@ -45,61 +45,77 @@ const FriendList = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header />
-      <main className="max-w-screen-xl mx-auto px-4 py-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Button
-            variant="ghost"
-            size="icon"
+      <main className="max-w-screen-xl mx-auto px-4 py-4">
+        {/* 헤더 */}
+        <div className="flex items-center gap-3 mb-6 px-1">
+          <button 
             onClick={() => navigate("/my")}
-            className="shrink-0"
+            className="p-2 hover:bg-muted rounded-xl transition-all duration-200 active:scale-95"
           >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-xl font-bold text-foreground">친구 목록</h1>
+            <ArrowLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <h1 className="text-2xl font-bold text-foreground">친구 목록</h1>
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+            <p className="text-sm text-muted-foreground">로딩 중...</p>
           </div>
         ) : friends.length === 0 ? (
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-8 text-center">
-              <User className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">아직 친구가 없습니다.</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                게시글이나 댓글에서 친구를 추가해보세요!
-              </p>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col items-center justify-center py-20 px-4">
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <User className="w-10 h-10 text-primary" />
+            </div>
+            <p className="text-lg font-semibold text-foreground mb-1">아직 친구가 없어요</p>
+            <p className="text-sm text-muted-foreground text-center mb-6">
+              게시글이나 댓글에서 친구를 추가하거나<br />
+              친구 요청 탭에서 사용자 ID로 초대해보세요
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/my/friend-requests")}
+              className="rounded-xl border-primary/20 hover:bg-primary/5 hover:border-primary/40"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              친구 요청으로 이동
+            </Button>
+          </div>
         ) : (
           <div className="space-y-3">
             {friends.map((friend) => {
               const friendId = friend.isSentByMe ? friend.receiverId : friend.senderId;
               return (
-                <Card key={friend.id} className="border-0 shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-12 h-12">
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          <User className="w-6 h-6" />
+                <Card 
+                  key={friend.id} 
+                  className="border border-border bg-card rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-primary/20"
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-14 h-14 ring-2 ring-primary/10">
+                        <AvatarFallback className="bg-primary text-primary-foreground text-lg font-semibold">
+                          <User className="w-7 h-7" />
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">
+                        <p className="font-semibold text-foreground text-base mb-1 truncate">
                           User #{friendId}
                         </p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(friend.createdAt).toLocaleDateString('ko-KR')}부터 친구
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(friend.createdAt).toLocaleDateString('ko-KR', { 
+                            year: 'numeric',
+                            month: 'long', 
+                            day: 'numeric'
+                          })}부터 친구
                         </p>
                       </div>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleStartChat(friend)}
-                        className="shrink-0"
+                        className="h-10 px-4 rounded-xl border-border hover:bg-primary/5 hover:border-primary/30 hover:text-primary transition-all duration-200 active:scale-95 shrink-0"
                       >
-                        <MessageCircle className="w-4 h-4 mr-1" />
+                        <MessageCircle className="w-4 h-4 mr-1.5" />
                         채팅
                       </Button>
                     </div>
