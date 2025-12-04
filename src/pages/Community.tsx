@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, MessageSquare } from "lucide-react";
 import { 
   getAllPosts, 
   PostListItem, 
@@ -57,70 +57,77 @@ const Community = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header />
-      <main className="max-w-screen-xl mx-auto px-4 py-6">
-        <div className="flex items-center gap-4 mb-6">
-          <button className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium">
-            현재 순위
-          </button>
-          <button className="px-4 py-2 rounded-full text-muted-foreground text-sm">
-            1. 실리카겔
-          </button>
-        </div>
-
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4">게시판 목록</h2>
+      <main className="max-w-screen-xl mx-auto px-4 py-4">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-foreground mb-4">게시판 목록</h2>
           
           {loading ? (
             <div className="space-y-2">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="w-full p-4 bg-card rounded-lg animate-pulse">
-                  <div className="h-4 bg-muted rounded w-1/4 mb-2" />
-                  <div className="h-3 bg-muted rounded w-3/4" />
+                <div key={i} className="w-full p-4 bg-card rounded-xl border border-border/50 animate-pulse shadow-sm">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-muted rounded-lg" />
+                    <div className="flex-1">
+                      <div className="h-4 bg-muted rounded w-1/4 mb-2" />
+                      <div className="h-3 bg-muted rounded w-3/4" />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           ) : error ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>{error}</p>
+            <div className="text-center py-12 bg-card rounded-xl border border-border/50">
+              <p className="text-sm text-muted-foreground mb-3">{error}</p>
               <button 
                 onClick={() => window.location.reload()} 
-                className="mt-2 text-primary underline"
+                className="text-sm text-primary hover:underline"
               >
                 다시 시도
               </button>
             </div>
           ) : boards.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              아직 게시글이 없습니다
+            <div className="text-center py-12 bg-card rounded-xl border border-border/50">
+              <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <MessageSquare className="w-8 h-8 text-primary" />
+              </div>
+              <p className="text-sm text-muted-foreground">아직 게시글이 없습니다</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {boards.map((board) => (
-                <button
-                  key={board.id}
-                  onClick={() => navigate(`/board/${board.id}`)}
-                  className="w-full flex items-center justify-between p-4 bg-card rounded-lg hover:bg-accent transition-colors text-left"
-                >
-                  <div>
-                    <h3 className="font-semibold text-foreground">{board.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{board.description}</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                </button>
+                <div key={board.id} className="relative group">
+                  {/* 레딧 스타일 왼쪽 색상 바 */}
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary via-primary/90 to-primary rounded-l-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  
+                  <button
+                    onClick={() => navigate(`/board/${board.id}`)}
+                    className="w-full flex items-center gap-4 p-5 bg-gradient-to-br from-card to-card/95 rounded-xl border border-border/50 hover:border-primary/30 hover:bg-gradient-to-br hover:from-primary/5 hover:to-card transition-all duration-200 shadow-sm hover:shadow-lg hover:shadow-primary/5 text-left"
+                  >
+                    {/* 게시판 아이콘 영역 */}
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5 flex items-center justify-center flex-shrink-0 group-hover:from-primary/25 group-hover:via-primary/15 group-hover:to-primary/10 transition-all duration-200 border border-primary/10 group-hover:border-primary/20 shadow-sm">
+                      <MessageSquare className="w-7 h-7 text-primary group-hover:scale-110 transition-transform duration-200" />
+                    </div>
+                    
+                    {/* 게시판 정보 */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg text-foreground mb-1.5 group-hover:text-primary transition-colors">
+                        {board.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground truncate group-hover:text-foreground/80 transition-colors">
+                        {board.description}
+                      </p>
+                    </div>
+                    
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-muted/50 group-hover:bg-primary/10 flex items-center justify-center transition-all duration-200 group-hover:scale-105">
+                        <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </div>
+                    </div>
+                  </button>
+                </div>
               ))}
             </div>
           )}
-        </div>
-
-        <div className="flex justify-center gap-4">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="w-20 h-20 rounded-full bg-muted flex items-center justify-center"
-            >
-              <span className="text-xs text-muted-foreground">Artist {i}</span>
-            </div>
-          ))}
         </div>
       </main>
       <BottomNav />
