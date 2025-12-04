@@ -167,9 +167,9 @@ const Chatting = () => {
 
   // 기본 아바타
   const renderDefaultAvatar = (room: ChatRoomSummary) => (
-    <Avatar className="w-12 h-12 ring-1 ring-gray-200">
-      <AvatarFallback className="bg-gradient-to-br from-purple-400 to-purple-500 text-white">
-        {room.roomType === RoomType.GROUP ? <Users /> : <User />}
+    <Avatar className="w-12 h-12 ring-1 ring-primary/10">
+      <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+        {room.roomType === RoomType.GROUP ? <Users className="w-5 h-5" /> : <User className="w-5 h-5" />}
       </AvatarFallback>
     </Avatar>
   );
@@ -210,140 +210,163 @@ const Chatting = () => {
       </header>
 
       {/* LIST */}
-      <div className="max-w-screen-xl mx-auto">
+      <div className="max-w-screen-xl mx-auto px-4">
         {loading ? (
-          <p className="text-center py-20">로딩 중...</p>
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin mb-3"></div>
+            <p className="text-sm text-muted-foreground">로딩 중...</p>
+          </div>
         ) : sortedRooms.length === 0 ? (
-          <div className="flex flex-col items-center py-20">
-            <EmptyState
-              icon={MessageCircle}
-              message="아직 채팅방이 없습니다"
-              description="새로운 대화를 시작해보세요"
-            />
-            <Button onClick={() => setCreateOpen(true)} className="mt-6">
+          <div className="flex flex-col items-center justify-center py-20 px-4">
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-5">
+              <MessageCircle className="w-10 h-10 text-primary" />
+            </div>
+            <p className="text-lg font-semibold text-foreground mb-1.5">아직 채팅방이 없습니다</p>
+            <p className="text-sm text-muted-foreground text-center mb-6">
+              새로운 대화를 시작해보세요
+            </p>
+            <Button 
+              onClick={() => setCreateOpen(true)} 
+              className="h-10 px-5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm text-sm font-medium"
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
               새 채팅 시작하기
             </Button>
           </div>
         ) : (
-          sortedRooms.map(room => (
-            <div
-              key={room.roomId}
-              className="group flex items-center gap-4 p-4 border-b hover:bg-purple-50 cursor-pointer"
-            >
+          <div className="space-y-1.5 pt-3">
+            {sortedRooms.map(room => (
               <div
-                className="flex items-center gap-4 flex-1"
-                onClick={() => navigate(`/chat/${room.roomId}`)}
+                key={room.roomId}
+                className="group flex items-center gap-3 p-4 rounded-xl border border-border/50 bg-card hover:bg-primary/3 hover:border-primary/30 cursor-pointer transition-all duration-150 shadow-sm hover:shadow-md"
               >
-                {renderDefaultAvatar(room)}
+                <div
+                  className="flex items-center gap-3 flex-1 min-w-0"
+                  onClick={() => navigate(`/chat/${room.roomId}`)}
+                >
+                  {renderDefaultAvatar(room)}
 
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold truncate">
-                      {room.name || `채팅방 ${room.roomId}`}
-                    </h3>
-                    <span className="text-xs text-muted-foreground">
-                      {formatTime(room.updatedAt)}
-                    </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-semibold text-base text-foreground truncate">
+                        {room.name || `채팅방 ${room.roomId}`}
+                      </h3>
+                      <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                        {formatTime(room.updatedAt)}
+                      </span>
+                    </div>
+
+                    <p className="text-sm text-muted-foreground truncate">
+                      {room.lastMessage || "메시지가 없습니다"}
+                    </p>
                   </div>
-
-                  <p className="text-sm text-muted-foreground truncate">
-                    {room.lastMessage || "메시지가 없습니다"}
-                  </p>
                 </div>
-              </div>
 
-              {/* 숨기기 버튼 */}
-              <button
-                onClick={e => handleHideChatRoom(room.roomId, e)}
-                className="opacity-0 group-hover:opacity-100 transition p-2"
-              >
-                <EyeOff className="w-5 h-5" />
-              </button>
-            </div>
-          ))
+                {/* 숨기기 버튼 */}
+                <button
+                  onClick={e => handleHideChatRoom(room.roomId, e)}
+                  className="opacity-0 group-hover:opacity-100 transition-all p-1.5 hover:bg-muted/50 rounded-lg shrink-0"
+                >
+                  <EyeOff className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
       {/* ----- SEARCH DIALOG ----- */}
       <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>채팅 검색</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">채팅 검색</DialogTitle>
           </DialogHeader>
 
           <Input
             placeholder="채팅방 또는 메시지 검색"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
+            className="h-10 text-sm"
           />
 
-          <div className="mt-4 space-y-2 max-h-72 overflow-y-auto">
-            {sortedRooms.map(room => (
-              <div
-                key={room.roomId}
-                onClick={() => {
-                  navigate(`/chat/${room.roomId}`);
-                  setSearchOpen(false);
-                }}
-                className="p-3 hover:bg-accent rounded-lg cursor-pointer"
-              >
-                <h4>{room.name || `채팅방 ${room.roomId}`}</h4>
-                <p className="text-sm text-muted-foreground truncate">
-                  {room.lastMessage}
-                </p>
-              </div>
-            ))}
+          <div className="mt-4 space-y-1.5 max-h-72 overflow-y-auto">
+            {sortedRooms.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8 text-sm">
+                검색 결과가 없습니다
+              </p>
+            ) : (
+              sortedRooms.map(room => (
+                <div
+                  key={room.roomId}
+                  onClick={() => {
+                    navigate(`/chat/${room.roomId}`);
+                    setSearchOpen(false);
+                  }}
+                  className="p-3 hover:bg-primary/5 rounded-lg cursor-pointer transition-colors duration-150"
+                >
+                  <h4 className="font-semibold text-sm mb-0.5">{room.name || `채팅방 ${room.roomId}`}</h4>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {room.lastMessage || "메시지가 없습니다"}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </DialogContent>
       </Dialog>
 
       {/* ----- CREATE CHAT ROOM DIALOG ----- */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>새 채팅방 만들기</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">새 채팅방 만들기</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="roomType">채팅방 유형</Label>
+              <Label htmlFor="roomType" className="text-sm font-medium mb-1.5 block">채팅방 유형</Label>
               <Select
                 value={roomType}
                 onValueChange={(value) => setRoomType(value as RoomType)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-10 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={RoomType.GROUP}>그룹 채팅</SelectItem>
-                  <SelectItem value={RoomType.DIRECT}>1:1 채팅</SelectItem>
+                  <SelectItem value={RoomType.GROUP} className="text-sm">그룹 채팅</SelectItem>
+                  <SelectItem value={RoomType.DIRECT} className="text-sm">1:1 채팅</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {roomType === RoomType.GROUP && (
               <div>
-                <Label htmlFor="roomName">채팅방 이름</Label>
+                <Label htmlFor="roomName" className="text-sm font-medium mb-1.5 block">채팅방 이름</Label>
                 <Input
                   id="roomName"
                   placeholder="채팅방 이름을 입력하세요"
                   value={roomName}
                   onChange={(e) => setRoomName(e.target.value)}
+                  className="h-10 text-sm"
                 />
               </div>
             )}
 
             <div>
-              <Label htmlFor="memberIds">사용자 ID (쉼표로 구분)</Label>
+              <Label htmlFor="memberIds" className="text-sm font-medium mb-1.5 block">사용자 ID (쉼표로 구분)</Label>
               <Input
                 id="memberIds"
                 placeholder="예: 1, 2, 3"
                 value={memberIds}
                 onChange={(e) => setMemberIds(e.target.value)}
+                className="h-10 text-sm"
               />
             </div>
 
-            <Button onClick={handleCreateChatRoom} className="w-full">
+            <Button 
+              onClick={handleCreateChatRoom} 
+              className="w-full h-10 text-sm font-medium bg-primary hover:bg-primary/90 shadow-sm"
+            >
               채팅방 생성
             </Button>
           </div>
@@ -352,38 +375,39 @@ const Chatting = () => {
 
       {/* ----- HIDDEN ROOMS DIALOG ----- */}
       <Dialog open={hiddenRoomsDialogOpen} onOpenChange={setHiddenRoomsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>숨긴 채팅방</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">숨긴 채팅방</DialogTitle>
           </DialogHeader>
 
-          <div className="mt-4 space-y-2 max-h-72 overflow-y-auto">
+          <div className="mt-4 space-y-1.5 max-h-72 overflow-y-auto">
             {getHiddenRooms().length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">
+              <p className="text-center text-muted-foreground py-8 text-sm">
                 숨긴 채팅방이 없습니다
               </p>
             ) : (
               getHiddenRooms().map(room => (
                 <div
                   key={room.roomId}
-                  className="flex items-center justify-between p-3 hover:bg-accent rounded-lg"
+                  className="flex items-center justify-between p-3 hover:bg-primary/5 rounded-lg transition-colors duration-150"
                 >
                   <div
-                    className="flex-1 cursor-pointer"
+                    className="flex-1 cursor-pointer min-w-0"
                     onClick={() => {
                       navigate(`/chat/${room.roomId}`);
                       setHiddenRoomsDialogOpen(false);
                     }}
                   >
-                    <h4>{room.name || `채팅방 ${room.roomId}`}</h4>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {room.lastMessage}
+                    <h4 className="font-semibold text-sm mb-0.5">{room.name || `채팅방 ${room.roomId}`}</h4>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {room.lastMessage || "메시지가 없습니다"}
                     </p>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleUnhideChatRoom(room.roomId)}
+                    className="shrink-0 ml-2 h-8 w-8 p-0 hover:bg-primary/10"
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
