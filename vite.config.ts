@@ -3,16 +3,26 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    global: 'globalThis',
+  },
   server: {
     host: "::",
     port: 8000,
     proxy: {
       '/api': {
-        target: 'https://bandchu.o-r.kr',
+        target: 'https://bandchu.o-r.kr',  // 배포 서버로 프록시 (CORS 문제 해결)
         changeOrigin: true,
-        secure: true,
+        secure: true,  // HTTPS이므로 true
+        rewrite: (path) => path,  // 경로 그대로 전달
+      },
+      '/ws-chat': {
+        target: 'https://bandchu.o-r.kr',  // 배포 서버로 프록시
+        changeOrigin: true,
+        secure: true,  // HTTPS이므로 true
+        ws: true,
+        rewrite: (path) => path,  // 경로 그대로 전달
       },
     },
   },

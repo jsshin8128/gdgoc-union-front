@@ -1,163 +1,377 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Search, Plus, Settings, MessageCircle, X, User, Users, EyeOff, Eye } from "lucide-react";
+import { useLocation } from "react-router-dom";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import EmptyState from "@/components/EmptyState";
 import BottomNav from "@/components/BottomNav";
-import { Plus, Search, Settings } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getChatRooms, ChatRoom } from "@/lib/chatstore";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+import { toast } from "sonner";
+
+import { getChatRoomList, createChatRoom } from "@/lib/api/chat";
+import { ChatRoomSummary, RoomType } from "@/types/chat";
 
 const Chatting = () => {
   const navigate = useNavigate();
+
+  // UI modal states
   const [searchOpen, setSearchOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [hiddenRoomsDialogOpen, setHiddenRoomsDialogOpen] = useState(false);
+
+  // Chat data
+  const [chatRooms, setChatRooms] = useState<ChatRoomSummary[]>([]);
+  const [allChatRooms, setAllChatRooms] = useState<ChatRoomSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Search field
   const [searchQuery, setSearchQuery] = useState("");
-  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+
+  // Create chat form
+  const [roomName, setRoomName] = useState("");
+  const [roomType, setRoomType] = useState<RoomType>(RoomType.GROUP);
+  const [memberIds, setMemberIds] = useState("");
+
+  const handleLogoClick = () => navigate("/");
+
+  // Hidden rooms (localStorage)
+  const getHiddenRoomIds = () => {
+    const hidden = localStorage.getItem("hiddenChatRooms");
+    return hidden ? JSON.parse(hidden) : [];
+  };
+
+  const setHiddenRoomIds = (ids: number[]) => {
+    localStorage.setItem("hiddenChatRooms", JSON.stringify(ids));
+  };
+
+  // Load chatrooms
+  const loadChatRooms = async () => {
+    try {
+      setLoading(true);
+      const response = await getChatRoomList();
+
+      const hiddenIds = getHiddenRoomIds();
+
+      setAllChatRooms(response.rooms);
+      setChatRooms(response.rooms.filter((r) => !hiddenIds.includes(r.roomId)));
+    } catch (error) {
+      toast.error("채팅방 목록을 불러오지 못했습니다.");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadRooms = () => {
-      setChatRooms(getChatRooms());
-    };
-    loadRooms();
-    
-    // Listen for storage changes (when new chat is created)
-    window.addEventListener("storage", loadRooms);
-    window.addEventListener("focus", loadRooms);
-    
-    return () => {
-      window.removeEventListener("storage", loadRooms);
-      window.removeEventListener("focus", loadRooms);
-    };
+    loadChatRooms();
   }, []);
 
-  const getTimeAgo = (dateString?: string) => {
-    if (!dateString) return "";
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    
-    if (diffMins < 1) return "방금 전";
-    if (diffMins < 60) return `${diffMins}분 전`;
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}시간 전`;
-    return `${Math.floor(diffHours / 24)}일 전`;
-  };
-const sortedRooms = [...chatRooms].sort((a, b) => {
-  const timeA = new Date(a.lastMessageTime || a.createdAt).getTime();
-  const timeB = new Date(b.lastMessageTime || b.createdAt).getTime();
-  return timeB - timeA; // 최신 순
-});
+  // Sort by latest update time
+  const sortedRooms = [...chatRooms].sort((a, b) => {
+    const timeA = new Date(a.updatedAt ?? a.createdAt).getTime();
+    const timeB = new Date(b.updatedAt ?? b.createdAt).getTime();
+    return timeB - timeA;
+  });
 
-const filteredRooms = sortedRooms.filter(room =>
-  room.username.toLowerCase().includes(searchQuery.toLowerCase())
-);
+  // Search logic
+  const searchResults = sortedRooms.filter((room) => {
+    const keyword = searchQuery.toLowerCase();
+    return (
+      room.name?.toLowerCase().includes(keyword) ||
+      room.lastMessage?.toLowerCase().includes(keyword)
+    );
+  });
+
+  // Render avatar
+  const renderAvatar = (room: ChatRoomSummary) => {
+    if (room.roomType === RoomType.GROUP) {
+      return (
+        <Avatar className="w-12 h-12">
+          <AvatarFallback className="bg-purple-500 text-white">
+            <Users className="w-6 h-6" />
+          </AvatarFallback>
+        </Avatar>
+      );
+    }
+    return (
+      <Avatar className="w-12 h-12">
+        <AvatarFallback className="bg-gray-400 text-white">
+          <User className="w-6 h-6" />
+        </AvatarFallback>
+      </Avatar>
+    );
+  };
+
+  // Format time
+  const formatTime = (timeString: string | null) => {
+    if (!timeString) return "";
+    const date = new Date(timeString);
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - date.getTime()) / 60000);
+
+    if (diff < 1) return "방금 전";
+    if (diff < 60) return `${diff}분 전`;
+    if (diff < 1440) return `${Math.floor(diff / 60)}시간 전`;
+
+    return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+  };
+
+  // Hide chatroom
+  const handleHide = (roomId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    const hidden = getHiddenRoomIds();
+    if (!hidden.includes(roomId)) {
+      setHiddenRoomIds([...hidden, roomId]);
+    }
+
+    setChatRooms((prev) => prev.filter((room) => room.roomId !== roomId));
+    toast.success("채팅방을 숨겼습니다.");
+  };
+
+  // Get hidden rooms
+  const hiddenRooms = allChatRooms.filter((r) =>
+    getHiddenRoomIds().includes(r.roomId)
+  );
+
+  const unhideRoom = async (roomId: number) => {
+    const updated = getHiddenRoomIds().filter((id) => id !== roomId);
+    setHiddenRoomIds(updated);
+
+    await loadChatRooms();
+    toast.success("채팅방이 다시 표시됩니다.");
+  };
+
+  // Create chat-room
+  const handleCreateChat = async () => {
+    if (roomType === RoomType.GROUP && !roomName.trim()) {
+      toast.error("그룹 이름을 입력하세요.");
+      return;
+    }
+    if (!memberIds.trim()) {
+      toast.error("초대할 사용자 ID를 입력하세요.");
+      return;
+    }
+
+    try {
+      const ids = memberIds
+        .split(",")
+        .map((x) => parseInt(x.trim()))
+        .filter((x) => !isNaN(x));
+
+      await createChatRoom({
+        roomType,
+        name: roomType === RoomType.GROUP ? roomName : null,
+        memberIds: ids,
+      });
+
+      toast.success("채팅방이 생성되었습니다.");
+      setCreateOpen(false);
+      setRoomName("");
+      setMemberIds("");
+      loadChatRooms();
+    } catch (error) {
+      toast.error("채팅방 생성 실패");
+      console.error(error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <header className="sticky top-0 bg-background border-b border-border z-40">
-        <div className="max-w-screen-xl mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="text-xl font-bold">채팅</h1>
-          <div className="flex items-center gap-3">
-            <button className="p-2 hover:bg-accent rounded-full transition-colors">
-              <Plus className="w-6 h-6" />
-            </button>
-            <button 
-              onClick={() => setSearchOpen(true)}
-              className="p-2 hover:bg-accent rounded-full transition-colors"
-            >
-              <Search className="w-6 h-6" />
-            </button>
-            <button className="p-2 hover:bg-accent rounded-full transition-colors">
-              <Settings className="w-6 h-6" />
-            </button>
-          </div>
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 bg-background border-b px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <h1
+            className="text-2xl font-bold cursor-pointer"
+            onClick={handleLogoClick}
+          >
+            BANDCHU
+          </h1>
+          <span className="text-lg font-semibold text-muted-foreground">채팅</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button className="p-2 hover:bg-accent rounded-full" onClick={() => setCreateOpen(true)}>
+            <Plus className="w-6 h-6" />
+          </button>
+          <button className="p-2 hover:bg-accent rounded-full" onClick={() => setSearchOpen(true)}>
+            <Search className="w-6 h-6" />
+          </button>
+          <button
+            className="p-2 hover:bg-accent rounded-full relative"
+            onClick={() => setHiddenRoomsDialogOpen(true)}
+          >
+            <Settings className="w-6 h-6" />
+            {hiddenRooms.length > 0 && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-purple-500 rounded-full"></span>
+            )}
+          </button>
         </div>
       </header>
 
-      {/* Chat List */}
-      <main className="max-w-screen-xl mx-auto">
-        {chatRooms.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-            <p>채팅방이 없습니다</p>
-            <p className="text-sm mt-2">게시판에서 친구를 추가하고 채팅을 시작해보세요</p>
+      {/* CHAT LIST */}
+      <div className="max-w-screen-xl mx-auto">
+        {loading ? (
+          <div className="py-20 text-center text-muted-foreground">로딩 중...</div>
+        ) : sortedRooms.length === 0 ? (
+          <div className="py-20 text-center">
+            <EmptyState
+              icon={MessageCircle}
+              message="아직 채팅방이 없습니다"
+              description="새로운 대화를 시작해보세요."
+            />
           </div>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="divide-y">
             {sortedRooms.map((room) => (
-              <button
-                key={room.id}
-                onClick={() => navigate(`/chat/${room.username}?user=${room.username}&board=${encodeURIComponent(room.board)}`)}
-                className="w-full px-4 py-4 flex items-center gap-3 hover:bg-accent transition-colors text-left"
+              <div
+                key={room.roomId}
+                className="flex items-center gap-4 p-4 hover:bg-accent cursor-pointer group"
+                onClick={() => navigate(`/chatting/${room.roomId}`)}
               >
-                <Avatar className="w-12 h-12">
-                  <AvatarImage src="" />
-                  <AvatarFallback>{room.username.charAt(0).toUpperCase()}</AvatarFallback>
-                </Avatar>
+                {renderAvatar(room)}
+
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold text-foreground">{room.username}</h3>
-                    <span className="text-xs text-muted-foreground">
-                      {getTimeAgo(room.lastMessageTime || room.createdAt)}
-                    </span>
-                  </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground truncate">
-                      {room.lastMessage || `${room.board} 글에서 보낸 사용자`}
-                    </p>
-                    {room.unread > 0 && (
-                      <span className="ml-2 bg-primary text-primary-foreground text-xs font-medium px-2 py-0.5 rounded-full">
-                        {room.unread}
-                      </span>
-                    )}
+                    <h3 className="font-semibold truncate">{room.name ?? `채팅방 ${room.roomId}`}</h3>
+                    <span className="text-xs text-muted-foreground">{formatTime(room.updatedAt)}</span>
                   </div>
+
+                  <p className="text-sm text-muted-foreground truncate">
+                    {room.lastMessage || "메시지가 없습니다."}
+                  </p>
                 </div>
-              </button>
+
+                {room.unreadCount > 0 && (
+                  <div className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
+                    {room.unreadCount}
+                  </div>
+                )}
+
+                <button
+                  onClick={(e) => handleHide(room.roomId, e)}
+                  className="opacity-0 group-hover:opacity-100 p-2"
+                >
+                  <EyeOff className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </div>
             ))}
           </div>
         )}
-      </main>
+      </div>
 
-      {/* Search Dialog */}
+      {/* SEARCH DIALOG */}
       <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>채팅방 찾기</DialogTitle>
+            <DialogTitle>채팅 검색</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              placeholder="검색어를 입력하세요"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {filteredRooms.length === 0 ? (
-                <p className="text-center text-muted-foreground py-4">검색 결과가 없습니다</p>
-              ) : (
-                filteredRooms.map((room) => (
-                  <button
-                    key={room.id}
-                    onClick={() => {
-                      navigate(`/chat/${room.username}?user=${room.username}&board=${encodeURIComponent(room.board)}`);
-                      setSearchOpen(false);
-                    }}
-                    className="w-full p-4 flex items-center gap-3 hover:bg-accent rounded-lg transition-colors text-left"
-                  >
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src="" />
-                      <AvatarFallback>{room.username.charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-medium text-foreground">{room.username}</h3>
-                      <p className="text-xs text-muted-foreground">{room.board}</p>
-                    </div>
-                  </button>
-                ))
-              )}
+
+          <Input
+            placeholder="채팅방 또는 메시지 검색..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="mb-4"
+          />
+
+          {searchResults.map((room) => (
+            <div
+              key={room.roomId}
+              className="p-3 rounded-lg hover:bg-accent cursor-pointer"
+              onClick={() => {
+                navigate(`/chatting/${room.roomId}`);
+                setSearchOpen(false);
+              }}
+            >
+              <h4 className="font-medium">{room.name ?? `채팅방 ${room.roomId}`}</h4>
+              <p className="text-sm text-muted-foreground truncate">
+                {room.lastMessage || "메시지가 없습니다"}
+              </p>
             </div>
+          ))}
+        </DialogContent>
+      </Dialog>
+
+      {/* CREATE CHAT ROOM */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>새 채팅 만들기</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Label>채팅 타입</Label>
+            <Select value={roomType} onValueChange={(v) => setRoomType(v as RoomType)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={RoomType.DIRECT}>1:1 채팅</SelectItem>
+                <SelectItem value={RoomType.GROUP}>그룹 채팅</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {roomType === RoomType.GROUP && (
+              <div>
+                <Label>그룹 이름</Label>
+                <Input value={roomName} onChange={(e) => setRoomName(e.target.value)} />
+              </div>
+            )}
+
+            <div>
+              <Label>초대할 사용자 ID</Label>
+              <Input
+                placeholder="예: 2,3,4"
+                value={memberIds}
+                onChange={(e) => setMemberIds(e.target.value)}
+              />
+            </div>
+
+            <Button onClick={handleCreateChat} className="w-full">
+              생성하기
+            </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* HIDDEN ROOMS DIALOG */}
+      <Dialog open={hiddenRoomsDialogOpen} onOpenChange={setHiddenRoomsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>숨긴 채팅방</DialogTitle>
+          </DialogHeader>
+
+          {hiddenRooms.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">숨긴 채팅방이 없습니다.</p>
+          ) : (
+            hiddenRooms.map((room) => (
+              <div key={room.roomId} className="p-3 flex items-center justify-between">
+                <span>{room.name ?? `채팅방 ${room.roomId}`}</span>
+                <Button variant="outline" onClick={() => unhideRoom(room.roomId)}>
+                  <Eye className="w-4 h-4 mr-2" /> 다시 보기
+                </Button>
+              </div>
+            ))
+          )}
         </DialogContent>
       </Dialog>
 
