@@ -238,7 +238,10 @@ const PostDetail = () => {
         <div className="bg-card rounded-lg p-4 mb-6">
           <h1 className="text-xl font-bold text-foreground mb-3">{post.title}</h1>
           <div className="text-sm text-muted-foreground mb-4">
-            <UserPopover memberId={post.artistId} displayName={`사용자${post.artistId}`} /> · {formatDate(post.createdAt)}
+          <UserPopover
+  memberId={post.memberId}
+  displayName={post.memberName || `사용자${post.memberId}`}
+/>
           </div>
 
           {/* 미디어 표시 */}
