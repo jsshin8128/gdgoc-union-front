@@ -148,10 +148,10 @@ let wsClient: WebSocketClient | null = null;
 /**
  * WebSocket 클라이언트 인스턴스 가져오기
  */
-export const getWebSocketClient = (baseUrl: string = ''): WebSocketClient => {
+export const getWebSocketClient = (): WebSocketClient => {
     if (!wsClient) {
-        // baseUrl 없이 호출되면 window.origin 자동 사용
-        wsClient = new WebSocketClient(baseUrl || '');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://bandchu.o-r.kr";
+        wsClient = new WebSocketClient(apiUrl);
     }
     return wsClient;
 };
