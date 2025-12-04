@@ -16,6 +16,7 @@ export interface PostListResponse {
 export interface CommentResponse {
   memberId: number;
   postId: number;
+  memberName?: string | null;
   commentId: number;
   content: string;
   createdAt: string;
@@ -34,6 +35,8 @@ export interface PostDetailResponse {
   postId: number;
   artistId: number;
   postType: string;
+   memberId: number;          // ← 추가
+  memberName?: string | null;
   title: string;
   content: string;
   createdAt: string;
