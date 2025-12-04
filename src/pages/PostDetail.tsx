@@ -238,7 +238,12 @@ const PostDetail = () => {
         <div className="bg-card rounded-lg p-4 mb-6">
           <h1 className="text-xl font-bold text-foreground mb-3">{post.title}</h1>
           <div className="text-sm text-muted-foreground mb-4">
-  <UserPopover memberId={post.memberId} displayName={post.memberName || `사용자${post.memberId}`} />
+<UserPopover
+  memberId={post.memberId}
+  displayName={post.memberName || `사용자${post.memberId}`}
+/>
+
+
           </div>
 
           {/* 미디어 표시 */}
@@ -301,7 +306,11 @@ const PostDetail = () => {
                   <div className="w-8 h-8 rounded-full bg-muted flex-shrink-0" />
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
-                    <UserPopover memberId={post.memberId} displayName={post.memberName || `사용자${post.memberId}`} />
+              <UserPopover
+  memberId={comment.memberId}
+  displayName={comment.memberName || `사용자${comment.memberId}`}
+/>
+
                       <button
                         onClick={() => handleDeleteComment(comment.commentId)}
                         className="text-muted-foreground hover:text-destructive transition-colors"
