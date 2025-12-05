@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import GoogleIcon from "@/components/GoogleIcon";
 import { ArrowLeft, UserCircle } from "lucide-react";
-import { login, LoginRequest, googleOAuth } from "@/lib/api/auth";
+import { login, LoginRequest, googleOAuth, getMemberInfo } from "@/lib/api/auth";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { handleGoogleSignIn, getGoogleClientId } from "@/lib/utils/googleAuth";
@@ -131,6 +131,22 @@ const Login = () => {
 
       // 로그인 시 이메일 저장
       localStorage.setItem('userEmail', data.email);
+      
+      // 사용자 정보 조회하여 닉네임 및 프로필 이미지 저장
+      try {
+        const memberInfo = await getMemberInfo();
+        localStorage.setItem('userNickname', memberInfo.nickname);
+        if (memberInfo.profileImageUrl) {
+          localStorage.setItem('userProfileImage', memberInfo.profileImageUrl);
+        }
+        if (memberInfo.role) {
+          localStorage.setItem('userRole', memberInfo.role);
+        }
+      } catch (infoError) {
+        // 사용자 정보 조회 실패 시에도 로그인은 진행 (닉네임은 나중에 설정 가능)
+        console.error('사용자 정보 조회 실패:', infoError);
+      }
+      
       toast.success('로그인 성공');
       navigate("/home");
     } catch (error: any) {

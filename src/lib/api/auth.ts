@@ -44,6 +44,14 @@ export interface ProfileSetupResponse {
   profileImageUrl?: string;
 }
 
+export interface MemberInfoResponse {
+  memberId: number;
+  email: string;
+  nickname: string;
+  role: 'FAN' | 'ARTIST';
+  profileImageUrl?: string;
+}
+
 export interface GoogleOAuthRequest {
   idToken: string;
 }
@@ -132,6 +140,17 @@ export const updateMemberRole = async (data: UpdateRoleRequest): Promise<UpdateR
   }
   
   throw new Error('역할 업데이트 응답 구조가 올바르지 않습니다.');
+};
+
+// 사용자 정보 조회
+export const getMemberInfo = async (): Promise<MemberInfoResponse> => {
+  const response = await apiClient.get<{ data: MemberInfoResponse } | MemberInfoResponse>('/api/members/me');
+  
+  // 응답 구조에 따라 처리
+  if (response.data && 'data' in response.data && response.data.data) {
+    return response.data.data;
+  }
+  return response.data as MemberInfoResponse;
 };
 
 // Google OAuth Client ID 조회 (공개 설정)
