@@ -50,14 +50,37 @@ const SignupType = () => {
         toast.error(errorMessage);
       }
     } else {
-      // 일반 회원가입인 경우 기존 플로우대로
-      navigate("/signup/form", { state: { userType } });
+      // 일반 회원가입인 경우: 역할 선택 후 프로필 설정으로 이동
+      // 역할 업데이트는 프로필 설정 완료 후 처리하거나, 여기서 바로 업데이트
+      try {
+        const response = await updateMemberRole({ role: userType });
+        localStorage.setItem('userRole', response.role);
+        toast.success('회원 유형이 설정되었습니다.');
+        navigate("/signup/profile", { state: { userType: response.role } });
+      } catch (error: any) {
+        // 네트워크 에러인지 확인
+        if (!error.response && error.request) {
+          toast.error('네트워크 에러가 발생했습니다. 서버에 연결할 수 없습니다.');
+          return;
+        }
+        
+        const errorMessage = 
+          error.response?.data?.message || 
+          error.message || 
+          '회원 유형 설정에 실패했습니다.';
+        toast.error(errorMessage);
+      }
     }
   };
 
   const handleBackClick = () => {
-    // 모든 회원가입에서 확인 다이얼로그 표시
-    setIsCancelDialogOpen(true);
+    // 구글 회원가입인 경우 바로 취소 처리 (역할 선택이 시작이므로 확인 다이얼로그 없이)
+    if (isGoogleSignup) {
+      handleCancelSignup();
+    } else {
+      // 일반 회원가입인 경우: 아이디/비밀번호 페이지로 돌아가기 (취소 다이얼로그 없이)
+      navigate("/signup/form");
+    }
   };
 
   const handleCancelSignup = async () => {
@@ -76,6 +99,16 @@ const SignupType = () => {
         console.error('회원 삭제 실패:', error);
         // 에러가 발생해도 사용자에게는 정상적으로 취소되었다고 표시
       }
+    } else {
+      // 일반 회원가입인 경우도 백엔드에서 회원 삭제 (이미 회원가입 완료된 경우)
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          await deleteAccount();
+        }
+      } catch (error: any) {
+        console.error('회원 삭제 실패:', error);
+      }
     }
     
     // 회원가입 취소: 저장된 토큰 및 사용자 정보 삭제
@@ -86,7 +119,6 @@ const SignupType = () => {
     localStorage.removeItem('userProfileImage');
     localStorage.removeItem('userRole');
     
-    toast.info('회원가입이 취소되었습니다.');
     navigate("/auth");
   };
 
@@ -97,7 +129,9 @@ const SignupType = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>회원가입을 취소하시겠습니까?</AlertDialogTitle>
             <AlertDialogDescription>
-              회원가입을 취소하면 입력하신 정보가 저장되지 않습니다. 다시 시작하려면 처음부터 진행해주세요.
+              {isGoogleSignup 
+                ? "회원가입을 취소하면 구글 계정 정보가 저장되지 않습니다. 다시 시작하려면 처음부터 진행해주세요."
+                : "회원가입을 취소하면 입력하신 정보가 저장되지 않습니다. 다시 시작하려면 처음부터 진행해주세요."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

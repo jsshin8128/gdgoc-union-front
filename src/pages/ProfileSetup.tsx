@@ -7,19 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Camera, User, X } from "lucide-react";
-import { setupProfile, deleteAccount } from "@/lib/api/auth";
+import { ArrowLeft, Camera, User } from "lucide-react";
+import { setupProfile } from "@/lib/api/auth";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 const profileSetupSchema = z.object({
   nickname: z.string().min(2, "닉네임은 최소 2자 이상이어야 합니다"),
@@ -32,7 +22,6 @@ const ProfileSetup = () => {
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewImage, setPreviewImage] = useState<string>("");
-  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const isGoogleSignup = (location.state as { isGoogleSignup?: boolean })?.isGoogleSignup || false;
 
   const form = useForm<ProfileSetupValues>({
@@ -113,88 +102,20 @@ const ProfileSetup = () => {
     }
   };
 
-  const handleCancelSignup = async () => {
-    setIsCancelDialogOpen(false);
-    
-    // 구글 회원가입인 경우 백엔드에서 회원 삭제
-    if (isGoogleSignup) {
-      try {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-          await deleteAccount();
-        }
-      } catch (error: any) {
-        // 회원 삭제 실패 시에도 프론트엔드 정리는 진행
-        // (이미 삭제된 경우 등 idempotent 특성으로 인해 실패할 수 있음)
-        console.error('회원 삭제 실패:', error);
-        // 에러가 발생해도 사용자에게는 정상적으로 취소되었다고 표시
-      }
-    } else {
-      // 일반 회원가입인 경우도 백엔드에서 회원 삭제
-      try {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-          await deleteAccount();
-        }
-      } catch (error: any) {
-        console.error('회원 삭제 실패:', error);
-      }
-    }
-    
-    // 회원가입 취소: 저장된 토큰 및 사용자 정보 삭제
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userNickname');
-    localStorage.removeItem('userProfileImage');
-    localStorage.removeItem('userRole');
-    
-    toast.info('회원가입이 취소되었습니다.');
-    navigate("/auth");
-  };
-
   return (
-    <>
-      <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>회원가입을 취소하시겠습니까?</AlertDialogTitle>
-            <AlertDialogDescription>
-              회원가입을 취소하면 입력하신 정보가 저장되지 않습니다. 다시 시작하려면 처음부터 진행해주세요.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>계속하기</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancelSignup} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              취소하기
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <div className="min-h-screen bg-background flex flex-col px-6 py-8 max-w-md mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-12">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10"
-              onClick={handleBackClick}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-2xl font-bold">프로필 설정</h1>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10"
-            onClick={() => setIsCancelDialogOpen(true)}
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+    <div className="min-h-screen bg-background flex flex-col px-6 py-8 max-w-md mx-auto">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-12">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10"
+          onClick={handleBackClick}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold">프로필 설정</h1>
+      </div>
 
       {/* Form Section */}
       <div className="flex-1 flex flex-col justify-between pb-8">
@@ -254,7 +175,6 @@ const ProfileSetup = () => {
         </Form>
       </div>
     </div>
-    </>
   );
 };
 

@@ -31,6 +31,7 @@ const SignupForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  // 일반 회원가입은 아이디/비밀번호부터 시작하므로 기본값 FAN 사용
   const userType = (location.state as { userType?: "FAN" | "ARTIST" })?.userType || "FAN";
 
   const form = useForm<SignupFormValues>({
@@ -43,12 +44,12 @@ const SignupForm = () => {
 
   const onSubmit = async (data: SignupFormValues) => {
     try {
-      // 회원가입
+      // 회원가입 (역할은 아직 선택하지 않았으므로 임시로 FAN 사용, 역할 선택 페이지에서 업데이트)
       await signup({
         email: data.email,
         password: data.password,
         nickname: 'temp', // 프로필 설정에서 업데이트할 예정
-        role: userType,
+        role: 'FAN', // 임시 역할, 역할 선택 페이지에서 업데이트됨
       });
       
       // 회원가입 성공 후 바로 로그인하여 토큰 받기
@@ -59,11 +60,11 @@ const SignupForm = () => {
       
       localStorage.setItem('accessToken', loginResponse.accessToken);
       localStorage.setItem('refreshToken', loginResponse.refreshToken);
-      // 회원가입 시 이메일과 role 저장
+      // 회원가입 시 이메일 저장 (role은 역할 선택 페이지에서 설정)
       localStorage.setItem('userEmail', data.email);
-      localStorage.setItem('userRole', userType);
       
-      navigate("/signup/profile", { 
+      // 일반 회원가입: 아이디/비밀번호 입력 후 역할 선택으로 이동
+      navigate("/signup/type", { 
         state: { 
           userType 
         } 

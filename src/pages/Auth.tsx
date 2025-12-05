@@ -156,7 +156,7 @@ const Auth = () => {
           <TabsContent value="signup" className="space-y-3 mt-0">
             <Button
               className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-sm"
-              onClick={() => navigate("/signup/type")}
+              onClick={() => navigate("/signup/form")}
             >
               일반 회원가입
             </Button>
