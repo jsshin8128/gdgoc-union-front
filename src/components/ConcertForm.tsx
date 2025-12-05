@@ -55,9 +55,9 @@ const DateTimePicker = ({ date, setDate }: { date: Date | undefined, setDate: (d
         <Calendar mode="single" selected={date} onSelect={handleDateSelect} initialFocus />
         <div className="p-2 border-t border-border flex items-center justify-center gap-2">
           <Label className="text-sm font-medium mr-2">Time</Label>
-          <Input type="number" placeholder="HH" min="0" max="23" className="w-16" value={date ? String(date.getHours()).padStart(2, '0') : ''} onChange={e => onTimeChange('hours', e.target.value)} />
+          <Input type="number" placeholder="HH" min="0" max="23" className="w-16" value={date ? String(date.getHours()).padStart(2, '0') : ''} onChange={e => handleTimeChange('hours', e.target.value)} />
           <span>:</span>
-          <Input type="number" placeholder="MM" min="0" max="59" className="w-16" value={date ? String(date.getMinutes()).padStart(2, '0') : ''} onChange={e => onTimeChange('minutes', e.target.value)} />
+          <Input type="number" placeholder="MM" min="0" max="59" className="w-16" value={date ? String(date.getMinutes()).padStart(2, '0') : ''} onChange={e => handleTimeChange('minutes', e.target.value)} />
         </div>
       </PopoverContent>
     </Popover>
