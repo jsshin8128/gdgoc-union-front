@@ -153,8 +153,26 @@ export const getAllPosts = async (): Promise<PostListResponse> => {
     throw new Error("게시글을 불러오는데 실패했습니다.");
   }
   
-  const result: ApiResponse<PostListResponse> = await response.json();
-  return result.data;
+  const result = await response.json();
+  
+  // 백엔드 응답 구조 확인: ApiResponse 래퍼가 있는지 확인
+  if (result.data && result.data.posts !== undefined) {
+    // { data: { posts: [...], ... }, message: "..." } 형태
+    return result.data;
+  } else if (result.posts !== undefined) {
+    // { posts: [...], totalElements: ..., totalPages: ... } 형태 (직접 PostListResponse)
+    return result as PostListResponse;
+  } else if (result.content !== undefined) {
+    // Spring Boot Page 형태: { content: [...], totalElements: ..., totalPages: ... }
+    return {
+      posts: result.content,
+      totalElements: result.totalElements || 0,
+      totalPages: result.totalPages || 0,
+    };
+  } else {
+    // 예상치 못한 구조
+    throw new Error("예상치 못한 API 응답 구조입니다.");
+  }
 };
 
 // 특정 게시판 타입별 게시글 조회 (페이징)
@@ -174,8 +192,26 @@ export const getPostsByType = async (
     throw new Error("게시글을 불러오는데 실패했습니다.");
   }
 
-  const result: ApiResponse<PostListResponse> = await response.json();
-  return result.data;
+  const result = await response.json();
+  
+  // 백엔드 응답 구조 확인: ApiResponse 래퍼가 있는지 확인
+  if (result.data && result.data.posts !== undefined) {
+    // { data: { posts: [...], ... }, message: "..." } 형태
+    return result.data;
+  } else if (result.posts !== undefined) {
+    // { posts: [...], totalElements: ..., totalPages: ... } 형태 (직접 PostListResponse)
+    return result as PostListResponse;
+  } else if (result.content !== undefined) {
+    // Spring Boot Page 형태: { content: [...], totalElements: ..., totalPages: ... }
+    return {
+      posts: result.content,
+      totalElements: result.totalElements || 0,
+      totalPages: result.totalPages || 0,
+    };
+  } else {
+    // 예상치 못한 구조
+    throw new Error("예상치 못한 API 응답 구조입니다.");
+  }
 };
 
 // 게시글 상세 조회
