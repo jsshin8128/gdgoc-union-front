@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Camera, User } from "lucide-react";
+import { ArrowLeft, Camera, User, X } from "lucide-react";
 import { setupProfile, deleteAccount } from "@/lib/api/auth";
 import { toast } from "sonner";
 import {
@@ -99,8 +99,12 @@ const ProfileSetup = () => {
   };
 
   const handleBackClick = () => {
-    // 모든 회원가입에서 확인 다이얼로그 표시
-    setIsCancelDialogOpen(true);
+    // 뒤로가기: 이전 단계로 이동 (역할 재선택 가능)
+    if (isGoogleSignup) {
+      navigate("/signup/type", { state: { isGoogleSignup: true } });
+    } else {
+      navigate("/signup/form");
+    }
   };
 
   const handleCancelSignup = async () => {
@@ -118,6 +122,16 @@ const ProfileSetup = () => {
         // (이미 삭제된 경우 등 idempotent 특성으로 인해 실패할 수 있음)
         console.error('회원 삭제 실패:', error);
         // 에러가 발생해도 사용자에게는 정상적으로 취소되었다고 표시
+      }
+    } else {
+      // 일반 회원가입인 경우도 백엔드에서 회원 삭제
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          await deleteAccount();
+        }
+      } catch (error: any) {
+        console.error('회원 삭제 실패:', error);
       }
     }
     
@@ -154,17 +168,27 @@ const ProfileSetup = () => {
 
       <div className="min-h-screen bg-background flex flex-col px-6 py-8 max-w-md mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-12">
+        <div className="flex items-center justify-between mb-12">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10"
+              onClick={handleBackClick}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-2xl font-bold">프로필 설정</h1>
+          </div>
           <Button
             variant="ghost"
             size="icon"
             className="h-10 w-10"
-            onClick={handleBackClick}
+            onClick={() => setIsCancelDialogOpen(true)}
           >
-            <ArrowLeft className="h-5 w-5" />
+            <X className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold">프로필 설정</h1>
-      </div>
+        </div>
 
       {/* Form Section */}
       <div className="flex-1 flex flex-col justify-between pb-8">
