@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -8,6 +9,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { ArrowLeft, UserPlus } from "lucide-react";
 import { signup, login } from "@/lib/api/auth";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const signupFormSchema = z.object({
   email: z.string().email("올바른 이메일 형식이 아닙니다"),
@@ -19,6 +30,7 @@ type SignupFormValues = z.infer<typeof signupFormSchema>;
 const SignupForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const userType = (location.state as { userType?: "FAN" | "ARTIST" })?.userType || "FAN";
 
   const form = useForm<SignupFormValues>({
@@ -99,20 +111,56 @@ const SignupForm = () => {
     }
   };
 
+  const handleBackClick = () => {
+    setIsCancelDialogOpen(true);
+  };
+
+  const handleCancelSignup = () => {
+    // 회원가입 취소: 저장된 토큰 및 사용자 정보 삭제
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userNickname');
+    localStorage.removeItem('userProfileImage');
+    localStorage.removeItem('userRole');
+    
+    toast.info('회원가입이 취소되었습니다.');
+    setIsCancelDialogOpen(false);
+    navigate("/auth");
+  };
+
   return (
-    <div className="min-h-screen bg-background flex flex-col px-6 py-8 max-w-md mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-12">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-10 w-10"
-          onClick={() => navigate("/signup/type")}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold">회원 가입</h1>
-      </div>
+    <>
+      <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>회원가입을 취소하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              회원가입을 취소하면 입력하신 정보가 저장되지 않습니다. 다시 시작하려면 처음부터 진행해주세요.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>계속하기</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelSignup} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              취소하기
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <div className="min-h-screen bg-background flex flex-col px-6 py-8 max-w-md mx-auto">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-12">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10"
+            onClick={handleBackClick}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold">회원 가입</h1>
+        </div>
 
       {/* Icon Section */}
       <div className="flex justify-center mb-10">
@@ -168,6 +216,7 @@ const SignupForm = () => {
         </Form>
       </div>
     </div>
+    </>
   );
 };
 
