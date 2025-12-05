@@ -121,7 +121,7 @@ const Chatting = () => {
 
       await createChatRoom({
         roomType,
-        name: roomType === RoomType.GROUP ? roomName : null,
+        name: roomType === RoomType.GROUP ? roomName: null,
         memberIds: ids,
       });
 
