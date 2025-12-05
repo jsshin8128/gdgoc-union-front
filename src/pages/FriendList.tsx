@@ -52,7 +52,7 @@ const FriendList = () => {
       }
 
       toast.success("채팅방으로 이동합니다");
-      navigate(`/chatrooms/${room.roomId}`);
+      navigate(`/chat/${room.roomId}`);
     } catch (err) {
       console.error("채팅방 생성 실패:", err);
       toast.error("채팅방 생성 실패");
