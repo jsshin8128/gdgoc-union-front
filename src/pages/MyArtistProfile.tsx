@@ -236,6 +236,7 @@ const MyArtistProfile = () => {
         </TabsContent>
         
         <TabsContent value="posts" className="mt-6 px-6 pb-6">
+          <AddItemHeader title="게시글" buttonText="추가" onButtonClick={() => navigate('/board/artist/create')} />
           <EmptyState icon={FileText} message="게시글이 없습니다" />
         </TabsContent>
 
