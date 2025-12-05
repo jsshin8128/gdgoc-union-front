@@ -75,16 +75,6 @@ const Community = () => {
                 </div>
               ))}
             </div>
-          ) : error ? (
-            <div className="text-center py-12 bg-card rounded-xl border border-border/50">
-              <p className="text-sm text-muted-foreground mb-3">{error}</p>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="text-sm text-primary hover:underline"
-              >
-                다시 시도
-              </button>
-            </div>
           ) : boards.length === 0 ? (
             <div className="text-center py-12 bg-card rounded-xl border border-border/50">
               <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
