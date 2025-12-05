@@ -133,36 +133,45 @@ const Login = () => {
       localStorage.setItem('userEmail', data.email);
       
       // 사용자 정보 조회하여 닉네임 및 프로필 이미지 저장
-      try {
-        const memberInfo = await getMemberInfo();
-        localStorage.setItem('userNickname', memberInfo.nickname);
-        if (memberInfo.profileImageUrl) {
-          localStorage.setItem('userProfileImage', memberInfo.profileImageUrl);
-        }
-        if (memberInfo.role) {
-          localStorage.setItem('userRole', memberInfo.role);
-        }
-      } catch (infoError) {
-        // 사용자 정보 조회 실패 시에도 로그인은 진행 (닉네임은 나중에 설정 가능)
-        console.error('사용자 정보 조회 실패:', infoError);
+      // 사용자 정보 조회 실패 시 로그인 실패로 처리
+      const memberInfo = await getMemberInfo();
+      localStorage.setItem('userNickname', memberInfo.nickname);
+      if (memberInfo.profileImageUrl) {
+        localStorage.setItem('userProfileImage', memberInfo.profileImageUrl);
+      }
+      if (memberInfo.role) {
+        localStorage.setItem('userRole', memberInfo.role);
       }
       
+      // 로그인 성공 메시지 표시 및 홈으로 이동
       toast.success('로그인 성공');
       navigate("/home");
     } catch (error: any) {
+      // 로그인 실패 시 저장된 토큰 정리
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userEmail');
+      localStorage.removeItem('userNickname');
+      localStorage.removeItem('userProfileImage');
+      localStorage.removeItem('userRole');
+      
+      let errorMessage = '로그인에 실패했습니다.';
+      
       // 네트워크 에러인지 확인
       if (!error.response && error.request) {
-        toast.error('네트워크 에러가 발생했습니다. 서버에 연결할 수 없습니다.');
-        return;
+        errorMessage = '네트워크 에러가 발생했습니다. 서버에 연결할 수 없습니다.';
+      } else if (error.response) {
+        // 서버 응답 구조에 따라 에러 메시지 추출
+        errorMessage = 
+          error.response?.data?.message || 
+          error.response?.data?.error || 
+          error.message || 
+          '로그인에 실패했습니다.';
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
-      // 서버 응답 구조에 따라 에러 메시지 추출
-      const errorMessage = 
-        error.response?.data?.message || 
-        error.response?.data?.error || 
-        error.message || 
-        '로그인에 실패했습니다.';
-      
+      // 에러 메시지 표시
       toast.error(errorMessage);
     }
   };
@@ -201,7 +210,13 @@ const Login = () => {
           </Button>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                form.handleSubmit(onSubmit)(e);
+              }} 
+              className="space-y-6"
+            >
               <FormField
                 control={form.control}
                 name="email"
