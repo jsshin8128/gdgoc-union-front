@@ -161,8 +161,10 @@ const Login = () => {
       if (!error.response && error.request) {
         errorMessage = '네트워크 에러가 발생했습니다. 서버에 연결할 수 없습니다.';
       } else if (error.response) {
-        // 서버 응답 구조에 따라 에러 메시지 추출
+        // 백엔드 응답 구조에 따라 에러 메시지 추출
+        // 백엔드 응답: { detail: "이메일 또는 비밀번호가 올바르지 않습니다.", ... }
         errorMessage = 
+          error.response?.data?.detail ||  // 백엔드 표준 에러 응답 필드
           error.response?.data?.message || 
           error.response?.data?.error || 
           error.message || 

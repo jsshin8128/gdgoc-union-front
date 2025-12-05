@@ -51,7 +51,23 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+    // 401 에러 처리 (토큰 갱신 시도)
+    // 단, 로그인/회원가입 등 public endpoint의 401은 토큰 갱신을 시도하지 않음
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      const publicEndpoints = [
+        '/api/members/login', 
+        '/api/members/signup', 
+        '/api/members/token/refresh',
+        '/api/config/google-client-id'
+      ];
+      
+      const isPublicEndpoint = publicEndpoints.some(endpoint => originalRequest.url?.includes(endpoint));
+      
+      // public endpoint의 401은 토큰 갱신을 시도하지 않고 그대로 에러 반환
+      if (isPublicEndpoint) {
+        return Promise.reject(error);
+      }
+      
       originalRequest._retry = true;
 
       const refreshTokenValue = localStorage.getItem('refreshToken');
