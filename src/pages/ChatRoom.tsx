@@ -29,6 +29,7 @@ const ChatRoom = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const wsClient = useRef(getWebSocketClient());
 
   const getCurrentUserId = (): number => {
@@ -64,15 +65,19 @@ const ChatRoom = () => {
       setRoomDetail(detail);
     } catch (error) {
       console.error('Failed to load room detail:', error);
+      toast.error('채팅방 정보를 불러오는데 실패했습니다.');
     }
   };
 
   // 🔥 발신자 이름 가져오기
   const getSenderName = (senderId: number): string => {
-    if (!roomDetail) return '사용자';
+    if (!roomDetail || !roomDetail.members) return '사용자';
     
-    const member = roomDetail.members?.find(m => m.userId === senderId);
-    return member?.username || '사용자';
+    const member = roomDetail.members.find(m => m.userId === senderId);
+    if (member && member.username) {
+      return member.username;
+    }
+    return '사용자';
   };
 
   // 메시지 목록 로드 및 읽음 처리
@@ -114,8 +119,12 @@ const ChatRoom = () => {
     if (!roomId) return;
 
     setIsInitialLoad(true);
-    loadRoomDetail(); // 🔥 채팅방 정보 로드
-    loadMessages();
+    // 채팅방 정보를 먼저 로드한 후 메시지 로드
+    const initialize = async () => {
+      await loadRoomDetail();
+      await loadMessages();
+    };
+    initialize();
 
     const client = wsClient.current;
     const roomIdNum = parseInt(roomId || '0');
@@ -156,6 +165,10 @@ const ChatRoom = () => {
       });
 
       setMessage("");
+      // 메시지 전송 후 입력창에 포커스 유지
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
     } catch (error) {
       console.error('Failed to send message:', error);
       toast.error('메시지 전송에 실패했습니다.');
@@ -304,12 +317,14 @@ const ChatRoom = () => {
             <Plus className="w-5 h-5" />
           </button>
           <Input
+            ref={inputRef}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="메시지를 입력하세요..."
             className="flex-1 bg-gray-50 border-gray-200 focus-visible:ring-purple-500 focus-visible:ring-2 rounded-full px-4 h-11"
             disabled={sending}
+            autoFocus
           />
           <Button
             onClick={handleSend}
