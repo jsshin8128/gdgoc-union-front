@@ -28,14 +28,22 @@ const Community = () => {
         setLoading(true);
         const response = await getAllPosts();
         
-        // API 응답을 게시판 목록으로 변환
-        const boardList: BoardItem[] = response.posts.map((post: PostListItem) => ({
-          id: postTypeToBoardId[post.postType] || post.postType.toLowerCase(),
-          name: postTypeToBoardName[post.postType] || post.postType,
-          description: post.title,
-        }));
-        
-        setBoards(boardList);
+        if (response.posts.length === 0) {
+          // API 응답이 비어있을 경우, 기본 게시판 목록을 표시
+          setBoards([
+            { id: "free", name: "자유 게시판", description: "아직 게시글이 없습니다" },
+            { id: "companion", name: "동행 게시판", description: "아직 게시글이 없습니다" },
+            { id: "review", name: "후기 게시판", description: "아직 게시글이 없습니다" },
+          ]);
+        } else {
+          // API 응답이 있을 경우, 해당 게시판 목록으로 변환
+          const boardList: BoardItem[] = response.posts.map((post: PostListItem) => ({
+            id: postTypeToBoardId[post.postType] || post.postType.toLowerCase(),
+            name: postTypeToBoardName[post.postType] || post.postType,
+            description: post.title,
+          }));
+          setBoards(boardList);
+        }
         setError(null);
       } catch (err) {
         console.error("게시글 로딩 실패:", err);
