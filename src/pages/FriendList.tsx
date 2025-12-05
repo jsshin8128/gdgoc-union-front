@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowLeft, MessageCircle, User, Loader2, UserPlus } from "lucide-react";
 import { getFriends, FriendResponse } from "@/lib/api/friends";
-import { getOrCreateChatRoom } from "@/lib/chatstore";
+import { createChatRoom } from "@/lib/api/chat";
+import { RoomType } from "@/types/chat";
 import { toast } from "sonner";
 
 const FriendList = () => {
@@ -32,14 +33,30 @@ const FriendList = () => {
     }
   };
 
-  const handleStartChat = (friend: FriendResponse) => {
-    // 상대방 ID 결정 (내가 보낸 요청이면 receiverId, 받은 요청이면 senderId)
-    const friendId = friend.isSentByMe ? friend.receiverId : friend.senderId;
-    const friendName = `User #${friendId}`;
-    
-    // 채팅방 생성 또는 가져오기
-    const chatRoom = getOrCreateChatRoom(friendName, "친구");
-    navigate(`/chat/${chatRoom.id}`);
+  const handleStartChat = async (friend: FriendResponse) => {
+    try {
+      // 상대방 ID 결정 (내가 보낸 요청이면 receiverId, 받은 요청이면 senderId)
+      const friendId = friend.isSentByMe ? friend.receiverId : friend.senderId;
+      
+      // 채팅방 생성 API 호출 (개인 채팅)
+      const room = await createChatRoom({
+        roomType: RoomType.DIRECT,
+        name: null,
+        memberIds: [friendId],
+      });
+
+      if (!room?.roomId || isNaN(room.roomId)) {
+        console.error("유효하지 않은 응답:", room);
+        toast.error("채팅방 정보를 불러올 수 없습니다");
+        return;
+      }
+
+      toast.success("채팅방으로 이동합니다");
+      navigate(`/chatrooms/${room.roomId}`);
+    } catch (err) {
+      console.error("채팅방 생성 실패:", err);
+      toast.error("채팅방 생성 실패");
+    }
   };
 
   return (
