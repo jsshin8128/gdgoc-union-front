@@ -25,7 +25,9 @@ const ChatRoom = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true); 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null); 
   const wsClient = useRef(getWebSocketClient());
 
   const getCurrentUserId = (): number => {
@@ -48,6 +50,10 @@ const ChatRoom = () => {
 
   const currentUserId = getCurrentUserId();
 
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  };
+
   // 메시지 목록 로드 및 읽음 처리
   const loadMessages = async () => {
     if (!roomId) return;
@@ -56,6 +62,11 @@ const ChatRoom = () => {
       setLoading(true);
       const response = await getMessages(parseInt(roomId));
       setMessages(response.messages);
+
+      setTimeout(() => {
+        scrollToBottom('auto');
+        setIsInitialLoad(false);
+      }, 100);
 
       // 읽음 처리: 메시지가 있으면 마지막 메시지를 읽음으로 표시
       if (response.messages.length > 0) {
@@ -81,6 +92,7 @@ const ChatRoom = () => {
   useEffect(() => {
     if (!roomId) return;
 
+    setIsInitialLoad(true); // 🔥 추가
     loadMessages();
 
     const client = wsClient.current;
@@ -89,7 +101,6 @@ const ChatRoom = () => {
     client.connect().then(() => {
       client.subscribe(roomIdNum, (newMessage: ChatMessage) => {
         setMessages(prev => [...prev, newMessage]);
-        scrollToBottom();
 
         // 새 메시지 수신 시 자동 읽음 처리
         updateReadStatus(roomIdNum, { lastReadMessageId: newMessage.messageId })
@@ -104,13 +115,12 @@ const ChatRoom = () => {
     };
   }, [roomId]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  // 🔥 새 메시지 추가 시 부드럽게 스크롤 (초기 로드 제외)
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (!isInitialLoad && messages.length > 0) {
+      scrollToBottom('smooth');
+    }
+  }, [messages, isInitialLoad]);
 
   const handleSend = async () => {
     if (!message.trim() || !roomId || sending) return;
@@ -185,8 +195,11 @@ const ChatRoom = () => {
         </div>
       </header>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-3 pb-32">
+      {/* Messages - 🔥 ref 추가 */}
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto px-4 py-6 space-y-3 pb-32"
+      >
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full min-h-[60vh]">
             <EmptyState 
@@ -241,6 +254,7 @@ const ChatRoom = () => {
             );
           })
         )}
+        {/* 🔥 스크롤 타겟 */}
         <div ref={messagesEndRef} />
       </div>
 
@@ -274,5 +288,3 @@ const ChatRoom = () => {
 };
 
 export default ChatRoom;
-
- 
