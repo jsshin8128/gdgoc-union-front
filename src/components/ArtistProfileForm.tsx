@@ -76,7 +76,14 @@ const ArtistProfileForm = ({ mode, initialData, onSubmit, loading, onClose }: Ar
     <DialogContent
       className="sm:max-w-2xl"
       onInteractOutside={(e) => { if (isCreateMode) e.preventDefault(); }}
-      onEscapeKeyDown={(e) => { if (isCreateMode) e.preventDefault(); }}
+      onEscapeKeyDown={(e) => { 
+        if (isCreateMode) {
+          e.preventDefault();
+          if (onClose) {
+            onClose();
+          }
+        }
+      }}
     >
       <form onSubmit={handleSubmit}>
         <DialogHeader>

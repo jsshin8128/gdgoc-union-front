@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Edit, Link, CalendarDays, Mic, PlayCircle, Loader2, FileText } from 'lucide-react';
+import { Edit, Link, CalendarDays, Mic, PlayCircle, Loader2, FileText, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -129,6 +129,17 @@ const MyArtistProfile = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userNickname');
+    localStorage.removeItem('userProfileImage');
+    localStorage.removeItem('userRole');
+    toast.success('로그아웃되었습니다.');
+    navigate('/auth');
+  };
+
   if (pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -140,8 +151,20 @@ const MyArtistProfile = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* --- Modals --- */}
-      <Dialog open={!profileExists && !pageLoading}>
-        <ArtistProfileForm mode="create" onSubmit={handleProfileCreate} loading={formLoading} />
+      <Dialog 
+        open={!profileExists && !pageLoading}
+        onOpenChange={(open) => {
+          if (!open && !profileExists) {
+            handleLogout();
+          }
+        }}
+      >
+        <ArtistProfileForm 
+          mode="create" 
+          onSubmit={handleProfileCreate} 
+          loading={formLoading}
+          onClose={handleLogout}
+        />
       </Dialog>
       <Dialog open={isEditProfileModalOpen} onOpenChange={setIsEditProfileModalOpen}>
         <ArtistProfileForm mode="edit" initialData={artist} onSubmit={handleProfileUpdate} onClose={() => setIsEditProfileModalOpen(false)} loading={formLoading} />
