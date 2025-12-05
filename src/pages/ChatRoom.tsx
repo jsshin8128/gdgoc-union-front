@@ -165,15 +165,17 @@ const ChatRoom = () => {
       });
 
       setMessage("");
-      // 메시지 전송 후 입력창에 포커스 유지
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 0);
     } catch (error) {
       console.error('Failed to send message:', error);
       toast.error('메시지 전송에 실패했습니다.');
     } finally {
       setSending(false);
+      // 메시지 전송 성공/실패 여부와 관계없이 항상 입력창에 포커스 유지
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 10);
+      });
     }
   };
 
